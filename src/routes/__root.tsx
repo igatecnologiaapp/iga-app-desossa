@@ -78,14 +78,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "CarnePro — Gestão de Desossa" },
+      { name: "description", content: "ERP profissional para açougues: controle de desossa, rendimento e perdas em tempo real." },
+      { property: "og:title", content: "CarnePro — Gestão de Desossa" },
+      { property: "og:description", content: "ERP profissional para açougues: controle de desossa, rendimento e perdas em tempo real." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
