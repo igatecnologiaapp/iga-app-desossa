@@ -66,10 +66,13 @@ export type Database = {
           finished_at: string | null
           id: string
           observacoes: string | null
+          observacoes_finalizacao: string | null
           order_code: string | null
           order_date: string
+          peso_aproveitado: number | null
           peso_inicial: number
           product_id: string | null
+          rendimento_pct: number | null
           started_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           supplier_id: string | null
@@ -82,10 +85,13 @@ export type Database = {
           finished_at?: string | null
           id?: string
           observacoes?: string | null
+          observacoes_finalizacao?: string | null
           order_code?: string | null
           order_date?: string
+          peso_aproveitado?: number | null
           peso_inicial: number
           product_id?: string | null
+          rendimento_pct?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           supplier_id?: string | null
@@ -98,10 +104,13 @@ export type Database = {
           finished_at?: string | null
           id?: string
           observacoes?: string | null
+          observacoes_finalizacao?: string | null
           order_code?: string | null
           order_date?: string
+          peso_aproveitado?: number | null
           peso_inicial?: number
           product_id?: string | null
+          rendimento_pct?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           supplier_id?: string | null
