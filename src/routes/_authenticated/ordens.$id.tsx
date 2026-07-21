@@ -97,28 +97,29 @@ function OrdemDetalhe() {
               )}
             </div>
 
-            {order.deboning_losses?.[0] ? (
-              <div className="bg-panel border rounded-lg p-6">
-                <div className="font-bold mb-4">Perdas</div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                  {(
-                    [
-                      ["ossos", "Ossos"],
-                      ["gordura", "Gordura"],
-                      ["retalhos", "Retalhos"],
-                      ["descarte", "Descarte"],
-                      ["outros", "Outros"],
-                    ] as const
-                  ).map(([k, l]) => (
-                    <KV
-                      key={k}
-                      label={l}
-                      value={`${formatKg((order.deboning_losses as any)[0][k])} kg`}
-                    />
-                  ))}
+            {(() => {
+              const raw = (order as any).deboning_losses;
+              const losses = Array.isArray(raw) ? raw[0] : raw;
+              if (!losses) return null;
+              return (
+                <div className="bg-panel border rounded-lg p-6">
+                  <div className="font-bold mb-4">Perdas</div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                    {(
+                      [
+                        ["ossos", "Ossos"],
+                        ["gordura", "Gordura"],
+                        ["retalhos", "Retalhos"],
+                        ["descarte", "Descarte"],
+                        ["outros", "Outros"],
+                      ] as const
+                    ).map(([k, l]) => (
+                      <KV key={k} label={l} value={`${formatKg(losses[k])} kg`} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              );
+            })()}
           </div>
 
           <div className="space-y-4">
