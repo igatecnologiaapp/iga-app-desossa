@@ -78,12 +78,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CarnePro — Gestão de Desossa" },
-      { name: "description", content: "ERP profissional para açougues: controle de desossa, rendimento e perdas em tempo real." },
-      { property: "og:title", content: "CarnePro — Gestão de Desossa" },
-      { property: "og:description", content: "ERP profissional para açougues: controle de desossa, rendimento e perdas em tempo real." },
+      { title: "Sistema de Gestão de Desossa para Açougues" },
+      { name: "description", content: "Controle completo do processo de desossa: rendimento, perdas, ordens, fornecedores e produtividade em tempo real." },
+      { property: "og:title", content: "Sistema de Gestão de Desossa para Açougues" },
+      { property: "og:description", content: "Controle completo do processo de desossa: rendimento, perdas, ordens, fornecedores e produtividade em tempo real." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Sistema de Gestão de Desossa para Açougues" },
+      { name: "twitter:description", content: "Controle completo do processo de desossa: rendimento, perdas, ordens, fornecedores e produtividade em tempo real." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ba8f0221-d122-4bfd-9487-5cd1f3295493/id-preview-fc9868a4--6c6e31c0-b2ae-4143-8f0e-f99504bba695.lovable.app-1784649024356.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ba8f0221-d122-4bfd-9487-5cd1f3295493/id-preview-fc9868a4--6c6e31c0-b2ae-4143-8f0e-f99504bba695.lovable.app-1784649024356.png" },
     ],
     links: [
       {

@@ -4,16 +4,16 @@ import { ArrowRight, BarChart3, ClipboardList, Scale } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CarnePro — Sistema de Gestão de Desossa para Açougues" },
+      { title: "Sistema de Gestão de Desossa para Açougues" },
       {
         name: "description",
         content:
           "Controle completo do processo de desossa: rendimento, perdas, ordens, fornecedores e produtividade em tempo real.",
       },
-      { property: "og:title", content: "CarnePro — Gestão de Desossa" },
+      { property: "og:title", content: "Sistema de Gestão de Desossa para Açougues" },
       {
         property: "og:description",
-        content: "Rendimento, perdas e produtividade de desossa em tempo real.",
+        content: "Controle completo do processo de desossa: rendimento, perdas, ordens, fornecedores e produtividade em tempo real.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
