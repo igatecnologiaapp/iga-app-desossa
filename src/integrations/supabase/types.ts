@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      cortes: {
+        Row: {
+          active: boolean
+          category_id: string | null
+          code: string | null
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cortes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cortes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deboning_losses: {
         Row: {
           descarte: number
@@ -58,17 +106,80 @@ export type Database = {
           },
         ]
       }
+      deboning_order_history: {
+        Row: {
+          action: string
+          created_at: string
+          from_status: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          order_id: string
+          tenant_id: string
+          to_status: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          order_id: string
+          tenant_id?: string
+          to_status?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          order_id?: string
+          tenant_id?: string
+          to_status?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deboning_order_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "deboning_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deboning_order_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deboning_orders: {
         Row: {
           assigned_employee_id: string | null
+          cancellation_reason: string | null
           created_at: string
           created_by: string | null
+          divergencia_kg: number | null
+          divergencia_pct: number | null
+          finalizada_com_divergencia: boolean
           finished_at: string | null
           id: string
+          margem_pct: number | null
           observacoes: string | null
           observacoes_finalizacao: string | null
           order_code: string | null
           order_date: string
+          peca_entrada_id: string | null
           peso_aproveitado: number | null
           peso_inicial: number
           product_id: string | null
@@ -77,17 +188,24 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           supplier_id: string | null
           tenant_id: string
+          valor_compra: number | null
         }
         Insert: {
           assigned_employee_id?: string | null
+          cancellation_reason?: string | null
           created_at?: string
           created_by?: string | null
+          divergencia_kg?: number | null
+          divergencia_pct?: number | null
+          finalizada_com_divergencia?: boolean
           finished_at?: string | null
           id?: string
+          margem_pct?: number | null
           observacoes?: string | null
           observacoes_finalizacao?: string | null
           order_code?: string | null
           order_date?: string
+          peca_entrada_id?: string | null
           peso_aproveitado?: number | null
           peso_inicial: number
           product_id?: string | null
@@ -96,17 +214,24 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           supplier_id?: string | null
           tenant_id?: string
+          valor_compra?: number | null
         }
         Update: {
           assigned_employee_id?: string | null
+          cancellation_reason?: string | null
           created_at?: string
           created_by?: string | null
+          divergencia_kg?: number | null
+          divergencia_pct?: number | null
+          finalizada_com_divergencia?: boolean
           finished_at?: string | null
           id?: string
+          margem_pct?: number | null
           observacoes?: string | null
           observacoes_finalizacao?: string | null
           order_code?: string | null
           order_date?: string
+          peca_entrada_id?: string | null
           peso_aproveitado?: number | null
           peso_inicial?: number
           product_id?: string | null
@@ -115,6 +240,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           supplier_id?: string | null
           tenant_id?: string
+          valor_compra?: number | null
         }
         Relationships: [
           {
@@ -122,6 +248,13 @@ export type Database = {
             columns: ["assigned_employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deboning_orders_peca_entrada_id_fkey"
+            columns: ["peca_entrada_id"]
+            isOneToOne: false
+            referencedRelation: "pecas_entrada"
             referencedColumns: ["id"]
           },
           {
@@ -149,6 +282,7 @@ export type Database = {
       }
       deboning_pieces: {
         Row: {
+          corte_id: string | null
           created_at: string
           id: string
           observacoes: string | null
@@ -158,6 +292,7 @@ export type Database = {
           quantidade: number
         }
         Insert: {
+          corte_id?: string | null
           created_at?: string
           id?: string
           observacoes?: string | null
@@ -167,6 +302,7 @@ export type Database = {
           quantidade?: number
         }
         Update: {
+          corte_id?: string | null
           created_at?: string
           id?: string
           observacoes?: string | null
@@ -176,6 +312,13 @@ export type Database = {
           quantidade?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "deboning_pieces_corte_id_fkey"
+            columns: ["corte_id"]
+            isOneToOne: false
+            referencedRelation: "cortes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "deboning_pieces_order_id_fkey"
             columns: ["order_id"]
@@ -229,6 +372,157 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "employees_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          order_id: string | null
+          read_at: string | null
+          tenant_id: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          read_at?: string | null
+          tenant_id?: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          read_at?: string | null
+          tenant_id?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "deboning_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      peca_cortes: {
+        Row: {
+          corte_id: string
+          created_at: string
+          id: string
+          peca_id: string
+          rendimento_esperado_pct: number | null
+          tenant_id: string
+        }
+        Insert: {
+          corte_id: string
+          created_at?: string
+          id?: string
+          peca_id: string
+          rendimento_esperado_pct?: number | null
+          tenant_id?: string
+        }
+        Update: {
+          corte_id?: string
+          created_at?: string
+          id?: string
+          peca_id?: string
+          rendimento_esperado_pct?: number | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "peca_cortes_corte_id_fkey"
+            columns: ["corte_id"]
+            isOneToOne: false
+            referencedRelation: "cortes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "peca_cortes_peca_id_fkey"
+            columns: ["peca_id"]
+            isOneToOne: false
+            referencedRelation: "pecas_entrada"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "peca_cortes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pecas_entrada: {
+        Row: {
+          active: boolean
+          category_id: string | null
+          code: string | null
+          created_at: string
+          id: string
+          name: string
+          observacoes: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          observacoes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          observacoes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pecas_entrada_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pecas_entrada_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -471,6 +765,41 @@ export type Database = {
           },
         ]
       }
+      tenant_settings: {
+        Row: {
+          atencao_pct: number
+          critico_pct: number
+          divergencia_maxima_kg: number
+          margem_padrao_pct: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          atencao_pct?: number
+          critico_pct?: number
+          divergencia_maxima_kg?: number
+          margem_padrao_pct?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          atencao_pct?: number
+          critico_pct?: number
+          divergencia_maxima_kg?: number
+          margem_padrao_pct?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -536,8 +865,14 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "acougueiro"
-      order_status: "pendente" | "em_andamento" | "finalizada"
+      app_role: "admin" | "acougueiro" | "supervisor" | "visualizacao"
+      order_status:
+        | "pendente"
+        | "em_andamento"
+        | "finalizada"
+        | "atribuida"
+        | "aguardando_conferencia"
+        | "cancelada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -665,8 +1000,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "acougueiro"],
-      order_status: ["pendente", "em_andamento", "finalizada"],
+      app_role: ["admin", "acougueiro", "supervisor", "visualizacao"],
+      order_status: [
+        "pendente",
+        "em_andamento",
+        "finalizada",
+        "atribuida",
+        "aguardando_conferencia",
+        "cancelada",
+      ],
     },
   },
 } as const
