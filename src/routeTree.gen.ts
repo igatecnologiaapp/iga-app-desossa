@@ -12,12 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
 import { Route as AuthenticatedOrdensRouteImport } from './routes/_authenticated/ordens'
 import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
 import { Route as AuthenticatedFornecedoresRouteImport } from './routes/_authenticated/fornecedores'
 import { Route as AuthenticatedEntradasRouteImport } from './routes/_authenticated/entradas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedMobileIndexRouteImport } from './routes/_authenticated/mobile/index'
+import { Route as AuthenticatedOrdensIdRouteImport } from './routes/_authenticated/ordens.$id'
+import { Route as AuthenticatedMobileDesossaIdRouteImport } from './routes/_authenticated/mobile/desossa.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -32,6 +36,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProdutosRoute = AuthenticatedProdutosRouteImport.update({
   id: '/produtos',
@@ -65,6 +74,23 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMobileIndexRoute =
+  AuthenticatedMobileIndexRouteImport.update({
+    id: '/mobile/',
+    path: '/mobile/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOrdensIdRoute = AuthenticatedOrdensIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedOrdensRoute,
+} as any)
+const AuthenticatedMobileDesossaIdRoute =
+  AuthenticatedMobileDesossaIdRouteImport.update({
+    id: '/mobile/desossa/$id',
+    path: '/mobile/desossa/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,8 +99,12 @@ export interface FileRoutesByFullPath {
   '/entradas': typeof AuthenticatedEntradasRoute
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
-  '/ordens': typeof AuthenticatedOrdensRoute
+  '/ordens': typeof AuthenticatedOrdensRouteWithChildren
   '/produtos': typeof AuthenticatedProdutosRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/ordens/$id': typeof AuthenticatedOrdensIdRoute
+  '/mobile/': typeof AuthenticatedMobileIndexRoute
+  '/mobile/desossa/$id': typeof AuthenticatedMobileDesossaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -83,8 +113,12 @@ export interface FileRoutesByTo {
   '/entradas': typeof AuthenticatedEntradasRoute
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
-  '/ordens': typeof AuthenticatedOrdensRoute
+  '/ordens': typeof AuthenticatedOrdensRouteWithChildren
   '/produtos': typeof AuthenticatedProdutosRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/ordens/$id': typeof AuthenticatedOrdensIdRoute
+  '/mobile': typeof AuthenticatedMobileIndexRoute
+  '/mobile/desossa/$id': typeof AuthenticatedMobileDesossaIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,8 +129,12 @@ export interface FileRoutesById {
   '/_authenticated/entradas': typeof AuthenticatedEntradasRoute
   '/_authenticated/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
-  '/_authenticated/ordens': typeof AuthenticatedOrdensRoute
+  '/_authenticated/ordens': typeof AuthenticatedOrdensRouteWithChildren
   '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
+  '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/ordens/$id': typeof AuthenticatedOrdensIdRoute
+  '/_authenticated/mobile/': typeof AuthenticatedMobileIndexRoute
+  '/_authenticated/mobile/desossa/$id': typeof AuthenticatedMobileDesossaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,6 +147,10 @@ export interface FileRouteTypes {
     | '/funcionarios'
     | '/ordens'
     | '/produtos'
+    | '/relatorios'
+    | '/ordens/$id'
+    | '/mobile/'
+    | '/mobile/desossa/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -119,6 +161,10 @@ export interface FileRouteTypes {
     | '/funcionarios'
     | '/ordens'
     | '/produtos'
+    | '/relatorios'
+    | '/ordens/$id'
+    | '/mobile'
+    | '/mobile/desossa/$id'
   id:
     | '__root__'
     | '/'
@@ -130,6 +176,10 @@ export interface FileRouteTypes {
     | '/_authenticated/funcionarios'
     | '/_authenticated/ordens'
     | '/_authenticated/produtos'
+    | '/_authenticated/relatorios'
+    | '/_authenticated/ordens/$id'
+    | '/_authenticated/mobile/'
+    | '/_authenticated/mobile/desossa/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -160,6 +210,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/relatorios': {
+      id: '/_authenticated/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/produtos': {
       id: '/_authenticated/produtos'
@@ -203,16 +260,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mobile/': {
+      id: '/_authenticated/mobile/'
+      path: '/mobile'
+      fullPath: '/mobile/'
+      preLoaderRoute: typeof AuthenticatedMobileIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ordens/$id': {
+      id: '/_authenticated/ordens/$id'
+      path: '/$id'
+      fullPath: '/ordens/$id'
+      preLoaderRoute: typeof AuthenticatedOrdensIdRouteImport
+      parentRoute: typeof AuthenticatedOrdensRoute
+    }
+    '/_authenticated/mobile/desossa/$id': {
+      id: '/_authenticated/mobile/desossa/$id'
+      path: '/mobile/desossa/$id'
+      fullPath: '/mobile/desossa/$id'
+      preLoaderRoute: typeof AuthenticatedMobileDesossaIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
+
+interface AuthenticatedOrdensRouteChildren {
+  AuthenticatedOrdensIdRoute: typeof AuthenticatedOrdensIdRoute
+}
+
+const AuthenticatedOrdensRouteChildren: AuthenticatedOrdensRouteChildren = {
+  AuthenticatedOrdensIdRoute: AuthenticatedOrdensIdRoute,
+}
+
+const AuthenticatedOrdensRouteWithChildren =
+  AuthenticatedOrdensRoute._addFileChildren(AuthenticatedOrdensRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEntradasRoute: typeof AuthenticatedEntradasRoute
   AuthenticatedFornecedoresRoute: typeof AuthenticatedFornecedoresRoute
   AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
-  AuthenticatedOrdensRoute: typeof AuthenticatedOrdensRoute
+  AuthenticatedOrdensRoute: typeof AuthenticatedOrdensRouteWithChildren
   AuthenticatedProdutosRoute: typeof AuthenticatedProdutosRoute
+  AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedMobileIndexRoute: typeof AuthenticatedMobileIndexRoute
+  AuthenticatedMobileDesossaIdRoute: typeof AuthenticatedMobileDesossaIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -220,8 +312,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEntradasRoute: AuthenticatedEntradasRoute,
   AuthenticatedFornecedoresRoute: AuthenticatedFornecedoresRoute,
   AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
-  AuthenticatedOrdensRoute: AuthenticatedOrdensRoute,
+  AuthenticatedOrdensRoute: AuthenticatedOrdensRouteWithChildren,
   AuthenticatedProdutosRoute: AuthenticatedProdutosRoute,
+  AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedMobileIndexRoute: AuthenticatedMobileIndexRoute,
+  AuthenticatedMobileDesossaIdRoute: AuthenticatedMobileDesossaIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
