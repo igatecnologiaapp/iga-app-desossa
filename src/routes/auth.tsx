@@ -4,14 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff, LogIn, KeyRound } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
-    meta: [{ title: "Entrar — CarnePro" }],
+    meta: [
+      { title: "Entrar — CarnePro" },
+      { name: "description", content: "Acesso ao CarnePro — sistema de gestão de desossa." },
+    ],
   }),
   component: AuthPage,
 });
@@ -19,14 +21,22 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "reset">("login");
+  const [showPw, setShowPw] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<"admin" | "acougueiro">("admin");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/dashboard", replace: true });
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data.user) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.user.id);
+        const list = (roles ?? []).map((r) => r.role as string);
+        const target = list.includes("acougueiro") && !list.includes("admin") ? "/mobile" : "/dashboard";
+        navigate({ to: target, replace: true });
+      }
     });
   }, [navigate]);
 
@@ -39,163 +49,214 @@ function AuthPage() {
       toast.error("Falha ao entrar", { description: error.message });
       return;
     }
-    // Roteia por role
     const { data: userRes } = await supabase.auth.getUser();
     if (userRes.user) {
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userRes.user.id);
-      const isAdmin = (roles ?? []).some((r) => r.role === "admin");
-      navigate({ to: isAdmin ? "/dashboard" : "/mobile", replace: true });
+      const list = (roles ?? []).map((r) => r.role as string);
+      const target = list.includes("acougueiro") && !list.includes("admin") ? "/mobile" : "/dashboard";
+      toast.success("Bem-vindo!");
+      navigate({ to: target, replace: true });
     }
   }
 
-  async function handleSignup(e: React.FormEvent) {
+  async function handleReset(e: React.FormEvent) {
     e.preventDefault();
+    if (!email) {
+      toast.error("Informe seu e-mail primeiro.");
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: fullName, role },
-      },
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth`,
     });
     setLoading(false);
     if (error) {
-      toast.error("Falha ao cadastrar", { description: error.message });
+      toast.error("Não foi possível enviar", { description: error.message });
       return;
     }
-    toast.success("Conta criada!", { description: "Faça login para continuar." });
+    toast.success("E-mail enviado", { description: "Verifique sua caixa de entrada." });
+    setMode("login");
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-background px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <Link to="/" className="inline-flex items-center gap-3">
-            <div className="size-9 bg-primary rounded flex items-center justify-center text-primary-foreground font-bold">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+      {/* Lado visual */}
+      <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary via-primary to-[oklch(0.35_0.18_15)] text-primary-foreground relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.1) 20px, rgba(255,255,255,0.1) 21px)",
+        }} />
+        <div className="relative">
+          <div className="flex items-center gap-3">
+            <div className="size-11 bg-white/15 backdrop-blur rounded-md flex items-center justify-center font-bold text-xl border border-white/20">
               C
             </div>
-            <div className="font-bold tracking-tight text-xl">
-              CARNE<span className="text-primary">PRO</span>
+            <div>
+              <div className="font-bold tracking-tight text-2xl leading-none">CARNEPRO</div>
+              <div className="text-[10px] uppercase tracking-widest opacity-80 mt-1">
+                Sistema de Gestão de Desossa
+              </div>
             </div>
-          </Link>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">
-            Sistema de Gestão de Desossa
-          </p>
+          </div>
         </div>
+        <div className="relative space-y-6">
+          <h2 className="text-4xl font-bold leading-tight max-w-md">
+            Controle total do processo de desossa em tempo real.
+          </h2>
+          <div className="grid grid-cols-3 gap-4 max-w-md">
+            <Stat label="Aproveitamento" value="74,7%" />
+            <Stat label="Ordens/dia" value="18" />
+            <Stat label="Divergência" value="0,3kg" />
+          </div>
+        </div>
+        <div className="relative text-xs uppercase tracking-widest opacity-70">
+          Rendimento · Precificação · Conciliação
+        </div>
+      </div>
 
-        <div className="rounded-xl border bg-panel p-6 shadow-sm">
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login" className="space-y-4 mt-6">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email-l">E-mail</Label>
-                  <Input
-                    id="email-l"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
+      {/* Formulário */}
+      <div className="flex items-center justify-center p-6 lg:p-12">
+        <div className="w-full max-w-sm">
+          <div className="lg:hidden text-center mb-8">
+            <div className="inline-flex items-center gap-3">
+              <div className="size-11 bg-primary rounded-md flex items-center justify-center text-primary-foreground font-bold text-xl">
+                C
+              </div>
+              <div className="text-left">
+                <div className="font-bold tracking-tight text-xl leading-none">
+                  CARNE<span className="text-primary">PRO</span>
                 </div>
-                <div className="space-y-2">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
+                  Gestão de Desossa
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 mb-6">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {mode === "login" ? "Bem-vindo de volta" : "Recuperar acesso"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {mode === "login"
+                ? "Entre com suas credenciais para acessar o sistema."
+                : "Enviaremos um link de redefinição para o seu e-mail."}
+            </p>
+          </div>
+
+          {mode === "login" ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email-l">E-mail</Label>
+                <Input
+                  id="email-l"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@acougue.com"
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
                   <Label htmlFor="pw-l">Senha</Label>
+                  <button
+                    type="button"
+                    onClick={() => setMode("reset")}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
+                <div className="relative">
                   <Input
                     id="pw-l"
-                    type="password"
+                    type={showPw ? "text" : "password"}
                     autoComplete="current-password"
                     required
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-11 pr-11"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded text-muted-foreground hover:text-foreground"
+                    aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? <Loader2 className="size-4 animate-spin" /> : "Entrar"}
-                </Button>
-              </form>
-            </TabsContent>
+              </div>
 
-            <TabsContent value="signup" className="space-y-4 mt-6">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name-s">Nome completo</Label>
-                  <Input
-                    id="name-s"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email-s">E-mail</Label>
-                  <Input
-                    id="email-s"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pw-s">Senha</Label>
-                  <Input
-                    id="pw-s"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Perfil</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setRole("admin")}
-                      className={`rounded-md border px-3 py-2 text-sm font-medium ${role === "admin" ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground"}`}
-                    >
-                      Administrador
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRole("acougueiro")}
-                      className={`rounded-md border px-3 py-2 text-sm font-medium ${role === "acougueiro" ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground"}`}
-                    >
-                      Açougueiro
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    O admin gerencia cadastros e ordens; o açougueiro executa
-                    desossas no celular.
-                  </p>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? <Loader2 className="size-4 animate-spin" /> : "Criar conta"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+              <Button type="submit" className="w-full h-11 mt-2" disabled={loading}>
+                {loading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <>
+                    <LogIn className="size-4 mr-2" /> Entrar
+                  </>
+                )}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleReset} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email-r">E-mail cadastrado</Label>
+                <Input
+                  id="email-r"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@acougue.com"
+                  className="h-11"
+                />
+              </div>
+              <Button type="submit" className="w-full h-11" disabled={loading}>
+                {loading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <>
+                    <KeyRound className="size-4 mr-2" /> Enviar link de redefinição
+                  </>
+                )}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                className="w-full text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Voltar
+              </button>
+            </form>
+          )}
+
+          <p className="text-center text-[11px] text-muted-foreground mt-8">
+            Acesso restrito · Somente usuários cadastrados pelo administrador
+          </p>
+          <p className="text-center text-xs text-muted-foreground mt-4">
+            <Link to="/" className="hover:text-foreground">
+              ← Voltar à página inicial
+            </Link>
+          </p>
         </div>
-
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          <Link to="/" className="hover:text-foreground">
-            ← Voltar
-          </Link>
-        </p>
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white/10 backdrop-blur rounded-md p-3 border border-white/15">
+      <div className="text-[10px] uppercase tracking-widest opacity-80">{label}</div>
+      <div className="font-mono font-bold text-lg leading-tight">{value}</div>
     </div>
   );
 }

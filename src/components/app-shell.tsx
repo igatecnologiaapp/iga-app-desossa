@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AppSidebar } from "./app-sidebar";
+import { NotificationsBell } from "./notifications-bell";
 
 interface AppShellProps {
   title: string;
@@ -20,9 +21,12 @@ export function AppShell({ title, subtitle, actions, children }: AppShellProps) 
               <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
             ) : null}
           </div>
-          <div className="flex items-center gap-3 shrink-0">{actions}</div>
+          <div className="flex items-center gap-2 shrink-0">
+            {actions}
+            <NotificationsBell />
+          </div>
         </header>
-        <div className="p-4 lg:p-8 space-y-6 flex-1">{children}</div>
+        <div className="p-4 lg:p-8 space-y-6 flex-1 animate-fade-in">{children}</div>
       </main>
     </div>
   );
