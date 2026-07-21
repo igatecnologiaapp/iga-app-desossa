@@ -12,13 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedRendimentoRouteImport } from './routes/_authenticated/rendimento'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
+import { Route as AuthenticatedPecasRouteImport } from './routes/_authenticated/pecas'
 import { Route as AuthenticatedOrdensRouteImport } from './routes/_authenticated/ordens'
 import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
 import { Route as AuthenticatedFornecedoresRouteImport } from './routes/_authenticated/fornecedores'
 import { Route as AuthenticatedEntradasRouteImport } from './routes/_authenticated/entradas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCortesRouteImport } from './routes/_authenticated/cortes'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedMobileIndexRouteImport } from './routes/_authenticated/mobile/index'
 import { Route as AuthenticatedOrdensIdRouteImport } from './routes/_authenticated/ordens.$id'
 import { Route as AuthenticatedMobileDesossaIdRouteImport } from './routes/_authenticated/mobile/desossa.$id'
@@ -37,6 +42,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRendimentoRoute = AuthenticatedRendimentoRouteImport.update({
+  id: '/rendimento',
+  path: '/rendimento',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
@@ -45,6 +60,11 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
 const AuthenticatedProdutosRoute = AuthenticatedProdutosRouteImport.update({
   id: '/produtos',
   path: '/produtos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPecasRoute = AuthenticatedPecasRouteImport.update({
+  id: '/pecas',
+  path: '/pecas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOrdensRoute = AuthenticatedOrdensRouteImport.update({
@@ -74,6 +94,17 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCortesRoute = AuthenticatedCortesRouteImport.update({
+  id: '/cortes',
+  path: '/cortes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMobileIndexRoute =
   AuthenticatedMobileIndexRouteImport.update({
     id: '/mobile/',
@@ -95,13 +126,18 @@ const AuthenticatedMobileDesossaIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/cortes': typeof AuthenticatedCortesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/entradas': typeof AuthenticatedEntradasRoute
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/ordens': typeof AuthenticatedOrdensRouteWithChildren
+  '/pecas': typeof AuthenticatedPecasRoute
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/rendimento': typeof AuthenticatedRendimentoRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/ordens/$id': typeof AuthenticatedOrdensIdRoute
   '/mobile/': typeof AuthenticatedMobileIndexRoute
   '/mobile/desossa/$id': typeof AuthenticatedMobileDesossaIdRoute
@@ -109,13 +145,18 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/cortes': typeof AuthenticatedCortesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/entradas': typeof AuthenticatedEntradasRoute
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/ordens': typeof AuthenticatedOrdensRouteWithChildren
+  '/pecas': typeof AuthenticatedPecasRoute
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/rendimento': typeof AuthenticatedRendimentoRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/ordens/$id': typeof AuthenticatedOrdensIdRoute
   '/mobile': typeof AuthenticatedMobileIndexRoute
   '/mobile/desossa/$id': typeof AuthenticatedMobileDesossaIdRoute
@@ -125,13 +166,18 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/cortes': typeof AuthenticatedCortesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/entradas': typeof AuthenticatedEntradasRoute
   '/_authenticated/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
   '/_authenticated/ordens': typeof AuthenticatedOrdensRouteWithChildren
+  '/_authenticated/pecas': typeof AuthenticatedPecasRoute
   '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/rendimento': typeof AuthenticatedRendimentoRoute
+  '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/ordens/$id': typeof AuthenticatedOrdensIdRoute
   '/_authenticated/mobile/': typeof AuthenticatedMobileIndexRoute
   '/_authenticated/mobile/desossa/$id': typeof AuthenticatedMobileDesossaIdRoute
@@ -141,13 +187,18 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/configuracoes'
+    | '/cortes'
     | '/dashboard'
     | '/entradas'
     | '/fornecedores'
     | '/funcionarios'
     | '/ordens'
+    | '/pecas'
     | '/produtos'
     | '/relatorios'
+    | '/rendimento'
+    | '/usuarios'
     | '/ordens/$id'
     | '/mobile/'
     | '/mobile/desossa/$id'
@@ -155,13 +206,18 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/configuracoes'
+    | '/cortes'
     | '/dashboard'
     | '/entradas'
     | '/fornecedores'
     | '/funcionarios'
     | '/ordens'
+    | '/pecas'
     | '/produtos'
     | '/relatorios'
+    | '/rendimento'
+    | '/usuarios'
     | '/ordens/$id'
     | '/mobile'
     | '/mobile/desossa/$id'
@@ -170,13 +226,18 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/configuracoes'
+    | '/_authenticated/cortes'
     | '/_authenticated/dashboard'
     | '/_authenticated/entradas'
     | '/_authenticated/fornecedores'
     | '/_authenticated/funcionarios'
     | '/_authenticated/ordens'
+    | '/_authenticated/pecas'
     | '/_authenticated/produtos'
     | '/_authenticated/relatorios'
+    | '/_authenticated/rendimento'
+    | '/_authenticated/usuarios'
     | '/_authenticated/ordens/$id'
     | '/_authenticated/mobile/'
     | '/_authenticated/mobile/desossa/$id'
@@ -211,6 +272,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/usuarios': {
+      id: '/_authenticated/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rendimento': {
+      id: '/_authenticated/rendimento'
+      path: '/rendimento'
+      fullPath: '/rendimento'
+      preLoaderRoute: typeof AuthenticatedRendimentoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/relatorios': {
       id: '/_authenticated/relatorios'
       path: '/relatorios'
@@ -223,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/produtos'
       fullPath: '/produtos'
       preLoaderRoute: typeof AuthenticatedProdutosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pecas': {
+      id: '/_authenticated/pecas'
+      path: '/pecas'
+      fullPath: '/pecas'
+      preLoaderRoute: typeof AuthenticatedPecasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ordens': {
@@ -258,6 +340,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cortes': {
+      id: '/_authenticated/cortes'
+      path: '/cortes'
+      fullPath: '/cortes'
+      preLoaderRoute: typeof AuthenticatedCortesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/mobile/': {
@@ -296,25 +392,35 @@ const AuthenticatedOrdensRouteWithChildren =
   AuthenticatedOrdensRoute._addFileChildren(AuthenticatedOrdensRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedCortesRoute: typeof AuthenticatedCortesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEntradasRoute: typeof AuthenticatedEntradasRoute
   AuthenticatedFornecedoresRoute: typeof AuthenticatedFornecedoresRoute
   AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
   AuthenticatedOrdensRoute: typeof AuthenticatedOrdensRouteWithChildren
+  AuthenticatedPecasRoute: typeof AuthenticatedPecasRoute
   AuthenticatedProdutosRoute: typeof AuthenticatedProdutosRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedRendimentoRoute: typeof AuthenticatedRendimentoRoute
+  AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedMobileIndexRoute: typeof AuthenticatedMobileIndexRoute
   AuthenticatedMobileDesossaIdRoute: typeof AuthenticatedMobileDesossaIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedCortesRoute: AuthenticatedCortesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEntradasRoute: AuthenticatedEntradasRoute,
   AuthenticatedFornecedoresRoute: AuthenticatedFornecedoresRoute,
   AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
   AuthenticatedOrdensRoute: AuthenticatedOrdensRouteWithChildren,
+  AuthenticatedPecasRoute: AuthenticatedPecasRoute,
   AuthenticatedProdutosRoute: AuthenticatedProdutosRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedRendimentoRoute: AuthenticatedRendimentoRoute,
+  AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedMobileIndexRoute: AuthenticatedMobileIndexRoute,
   AuthenticatedMobileDesossaIdRoute: AuthenticatedMobileDesossaIdRoute,
 }
