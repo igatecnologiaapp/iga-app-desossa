@@ -109,12 +109,12 @@ function Dashboard() {
     >
       {/* KPIs de fluxo */}
       <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        <StatusPill label="Pendentes" value={op?.pendentes ?? 0} color="secondary" icon={ClipboardList} />
-        <StatusPill label="Atribuídas" value={op?.atribuidas ?? 0} color="blue" icon={ClipboardCheck} />
-        <StatusPill label="Em Andamento" value={op?.em_andamento ?? 0} color="warning" icon={Clock} />
-        <StatusPill label="Finalizadas" value={op?.finalizadas ?? 0} color="success" icon={ClipboardCheck} />
-        <StatusPill label="Canceladas" value={op?.canceladas ?? 0} color="muted" icon={ClipboardList} />
-        <StatusPill label="Divergências" value={op?.divergencias ?? 0} color="destructive" icon={AlertTriangle} />
+        <StatusPill label="Pendentes" value={op?.pendentes ?? 0} color="secondary" icon={ClipboardList} to="/ordens" search={{ status: "pendente" }} />
+        <StatusPill label="Atribuídas" value={op?.atribuidas ?? 0} color="blue" icon={ClipboardCheck} to="/ordens" search={{ status: "atribuida" }} />
+        <StatusPill label="Em Andamento" value={op?.em_andamento ?? 0} color="warning" icon={Clock} to="/ordens" search={{ status: "em_andamento" }} />
+        <StatusPill label="Finalizadas" value={op?.finalizadas ?? 0} color="success" icon={ClipboardCheck} to="/ordens" search={{ status: "finalizada" }} />
+        <StatusPill label="Canceladas" value={op?.canceladas ?? 0} color="muted" icon={ClipboardList} to="/ordens" search={{ status: "cancelada" }} />
+        <StatusPill label="Divergências" value={op?.divergencias ?? 0} color="destructive" icon={AlertTriangle} to="/ordens" search={{ divergencia: "1" }} />
       </section>
 
       {/* KPIs numéricos */}
@@ -237,11 +237,15 @@ function StatusPill({
   value,
   color,
   icon: Icon,
+  to,
+  search,
 }: {
   label: string;
   value: number;
   color: "secondary" | "blue" | "warning" | "success" | "destructive" | "muted";
   icon: React.ComponentType<{ className?: string }>;
+  to?: string;
+  search?: Record<string, string>;
 }) {
   const cls: Record<string, string> = {
     secondary: "bg-secondary text-foreground",
@@ -251,15 +255,24 @@ function StatusPill({
     destructive: "bg-destructive/10 text-destructive",
     muted: "bg-secondary text-muted-foreground",
   };
-  return (
-    <div className={`rounded-md p-3 flex items-center gap-3 animate-fade-in ${cls[color]}`}>
+  const inner = (
+    <>
       <Icon className="size-5 shrink-0" />
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-widest opacity-80 truncate">{label}</div>
         <div className="font-mono font-bold text-xl leading-none">{value}</div>
       </div>
-    </div>
+    </>
   );
+  const className = `rounded-md p-3 flex items-center gap-3 animate-fade-in ${cls[color]} ${to ? "hover:opacity-90 cursor-pointer transition-opacity" : ""}`;
+  if (to) {
+    return (
+      <Link to={to} search={search as any} className={className} aria-label={`Ver ${label}`}>
+        {inner}
+      </Link>
+    );
+  }
+  return <div className={className}>{inner}</div>;
 }
 
 function KpiCard({
