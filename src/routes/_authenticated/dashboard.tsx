@@ -317,7 +317,7 @@ function RankingCard({
   items,
 }: {
   title: string;
-  items: { name: string; detail: string; value: string }[];
+  items: { name: string; detail: string; value: string; to?: string; search?: Record<string, string | undefined> }[];
 }) {
   return (
     <div className="bg-panel border rounded-lg p-5">
@@ -326,18 +326,35 @@ function RankingCard({
         <div className="text-sm text-muted-foreground">Sem dados no período.</div>
       ) : (
         <ol className="space-y-3">
-          {items.map((it, i) => (
-            <li key={`${it.name}-${i}`} className="flex items-center gap-3">
-              <span className="size-6 rounded bg-secondary text-[11px] font-bold flex items-center justify-center">
-                {i + 1}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate">{it.name}</div>
-                <div className="text-[11px] text-muted-foreground truncate">{it.detail}</div>
-              </div>
-              <span className="font-mono text-sm font-bold">{it.value}</span>
-            </li>
-          ))}
+          {items.map((it, i) => {
+            const row = (
+              <>
+                <span className="size-6 rounded bg-secondary text-[11px] font-bold flex items-center justify-center">
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold truncate">{it.name}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">{it.detail}</div>
+                </div>
+                <span className="font-mono text-sm font-bold">{it.value}</span>
+              </>
+            );
+            return (
+              <li key={`${it.name}-${i}`}>
+                {it.to && it.search ? (
+                  <Link
+                    to={it.to}
+                    search={it.search as any}
+                    className="flex items-center gap-3 -mx-2 px-2 py-1 rounded-md hover:bg-secondary/60 transition-colors"
+                  >
+                    {row}
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-3">{row}</div>
+                )}
+              </li>
+            );
+          })}
         </ol>
       )}
     </div>
