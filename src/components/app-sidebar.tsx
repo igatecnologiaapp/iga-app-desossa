@@ -110,7 +110,7 @@ export function AppSidebar() {
       label: "Gestão",
       items: [
         { to: "/relatorios", label: "Relatórios", icon: BarChart3, show: canOps },
-        { to: "/mobile", label: "Visão Açougueiro", icon: Smartphone, show: perms.isAdmin || perms.isAcougueiro },
+        { to: "/mobile", label: "Painel do Açougueiro", icon: Smartphone, show: perms.isAcougueiro },
       ],
     },
     {
