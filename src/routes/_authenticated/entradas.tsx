@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { formatKg, formatCurrency, formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/entradas")({
-  head: () => ({ meta: [{ title: "Entrada de Produtos — PRO MEAT" }] }),
+  head: () => ({ meta: [{ title: "Entrada de Matéria-Prima — PRO MEAT" }] }),
   beforeLoad: ({ context }) => assertAnyRole((context as any).roles ?? [], ["admin", "supervisor"]),
   component: Entradas,
 });
