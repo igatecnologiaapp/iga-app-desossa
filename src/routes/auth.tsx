@@ -113,11 +113,11 @@ function AuthPage() {
           <div className="lg:hidden text-center mb-8">
             <div className="inline-flex items-center gap-3">
               <div className="size-11 bg-primary rounded-md flex items-center justify-center text-primary-foreground font-bold text-xl">
-                C
+                P
               </div>
               <div className="text-left">
                 <div className="font-bold tracking-tight text-xl leading-none">
-                  CARNE<span className="text-primary">PRO</span>
+                  PRO<span className="text-primary"> MEAT</span>
                 </div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                   Gestão de Desossa
