@@ -181,6 +181,8 @@ function UsuariosPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users-list"] });
+      qc.invalidateQueries({ queryKey: ["employees"] });
+      qc.invalidateQueries({ queryKey: ["employees-min"] });
       toast.success("Usuário removido");
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
