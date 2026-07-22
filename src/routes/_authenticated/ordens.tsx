@@ -257,6 +257,15 @@ function Ordens() {
         ) : null
       }
     >
+      {hasDrill ? (
+        <div className="flex items-center gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+          <span className="font-semibold text-primary">Filtros do dashboard aplicados</span>
+          <Link to="/ordens" className="ml-auto underline hover:no-underline">
+            Limpar
+          </Link>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         {STATUS_TABS.map((f) => {
           const count = f.k === "all" ? orders.length : orders.filter((o) => o.status === f.k).length;
