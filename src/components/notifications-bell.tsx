@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Bell, CheckCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserContext } from "@/hooks/use-auth";
@@ -13,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/format";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
+import { markNotificationsRead as markNotificationsReadFn } from "@/lib/notifications.functions";
+
 
 interface Notification {
   id: string;
