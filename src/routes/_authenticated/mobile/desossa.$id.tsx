@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { assertAnyRole } from "@/lib/route-guards";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,6 @@ import {
   statusColors,
   EMPTY_LOSSES,
   DEFAULT_TOLERANCE,
-  type Piece,
   type Losses,
 } from "@/lib/deboning-calcs";
 import { WeightInput } from "@/components/weight-input";
@@ -40,6 +39,7 @@ import { useTenantSettings } from "@/hooks/use-auth";
 import {
   startOrder as startOrderFn,
   addPiece as addPieceFn,
+  removePiece as removePieceFn,
   updateLosses as updateLossesFn,
   finalizeOrder as finalizeOrderFn,
 } from "@/lib/orders.functions";
@@ -55,17 +55,12 @@ export const Route = createFileRoute("/_authenticated/mobile/desossa/$id")({
   component: MobileDesossa,
 });
 
-interface PieceForm extends Piece {
-  temp_id: string;
-}
-
 function MobileDesossa() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: settings } = useTenantSettings();
 
-  const [pieces, setPieces] = useState<PieceForm[]>([]);
   const [losses, setLosses] = useState<Losses>(EMPTY_LOSSES);
   const [lossObs, setLossObs] = useState("");
   const [obs, setObs] = useState("");
@@ -77,6 +72,7 @@ function MobileDesossa() {
     observacoes: string;
   }>({ corte_id: "", peso: 0, quantidade: 1, observacoes: "" });
   const [divergenceOpen, setDivergenceOpen] = useState(false);
+  const lossesHydrated = useRef(false);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", id],
@@ -97,6 +93,48 @@ function MobileDesossa() {
     },
   });
 
+  // Peças já persistidas (fonte da verdade = banco)
+  const { data: pieces = [] } = useQuery({
+    queryKey: ["order-pieces", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deboning_pieces")
+        .select("id, corte_id, peso, quantidade, observacoes, created_at, cortes:corte_id(name, code)")
+        .eq("order_id", id)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Perdas persistidas (hidratar formulário na primeira carga)
+  const { data: lossesRow } = useQuery({
+    queryKey: ["order-losses", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deboning_losses")
+        .select("ossos, gordura, retalhos, descarte, outros, observacoes")
+        .eq("order_id", id)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (lossesHydrated.current) return;
+    if (lossesRow) {
+      setLosses({
+        ossos: Number(lossesRow.ossos ?? 0),
+        gordura: Number(lossesRow.gordura ?? 0),
+        retalhos: Number(lossesRow.retalhos ?? 0),
+        descarte: Number(lossesRow.descarte ?? 0),
+        outros: Number(lossesRow.outros ?? 0),
+      });
+      setLossObs(lossesRow.observacoes ?? "");
+      lossesHydrated.current = true;
+    }
+  }, [lossesRow]);
+
   // Cortes disponíveis para a peça
   const pecaId = (order as any)?.peca_entrada_id as string | undefined;
   const { data: cortesDisponiveis = [] } = useQuery({
@@ -114,7 +152,6 @@ function MobileDesossa() {
     },
   });
 
-  // Fallback: se peça não tem cortes mapeados, mostra cortes da categoria
   const catId = (order as any)?.pecas_entrada?.category_id as string | undefined;
   const { data: cortesFallback = [] } = useQuery({
     queryKey: ["cortes-cat", catId],
@@ -134,6 +171,7 @@ function MobileDesossa() {
 
   const startOrder = useServerFn(startOrderFn);
   const addPieceRpc = useServerFn(addPieceFn);
+  const removePieceRpc = useServerFn(removePieceFn);
   const updateLossesRpc = useServerFn(updateLossesFn);
   const finalizeOrder = useServerFn(finalizeOrderFn);
 
@@ -148,9 +186,85 @@ function MobileDesossa() {
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 
+  const addPieceMut = useMutation({
+    mutationFn: async (input: {
+      corte_id: string;
+      peso: number;
+      quantidade: number;
+      observacoes: string | null;
+    }) =>
+      addPieceRpc({
+        data: {
+          order_id: id,
+          corte_id: input.corte_id,
+          peso: input.peso,
+          quantidade: input.quantidade,
+          observacoes: input.observacoes,
+        },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["order-pieces", id] });
+      qc.invalidateQueries({ queryKey: ["order-history", id] });
+      setPieceForm({ corte_id: "", peso: 0, quantidade: 1, observacoes: "" });
+      setPieceDialogOpen(false);
+      toast.success("Corte registrado");
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
+  const removePieceMut = useMutation({
+    mutationFn: async (piece_id: string) =>
+      removePieceRpc({ data: { order_id: id, piece_id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["order-pieces", id] });
+      qc.invalidateQueries({ queryKey: ["order-history", id] });
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
+  const lossesMut = useMutation({
+    mutationFn: async (payload: Losses & { observacoes: string | null }) =>
+      updateLossesRpc({
+        data: {
+          order_id: id,
+          ossos: Number(payload.ossos || 0),
+          gordura: Number(payload.gordura || 0),
+          retalhos: Number(payload.retalhos || 0),
+          descarte: Number(payload.descarte || 0),
+          outros: Number(payload.outros || 0),
+          observacoes: payload.observacoes,
+        },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["order-losses", id] });
+    },
+    onError: (e: Error) => toast.error("Erro ao salvar perdas", { description: e.message }),
+  });
+
+  // Auto-save de perdas (debounced) — apenas quando em_andamento
+  useEffect(() => {
+    if (!lossesHydrated.current) return;
+    if (order?.status !== "em_andamento") return;
+    const t = setTimeout(() => {
+      lossesMut.mutate({ ...losses, observacoes: lossObs || null });
+    }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [losses, lossObs, order?.status]);
+
+  const piecesForCalc = useMemo(
+    () =>
+      pieces.map((p: any) => ({
+        corte_id: p.corte_id,
+        peso: Number(p.peso),
+        quantidade: Number(p.quantidade || 1),
+      })),
+    [pieces],
+  );
+
   const rec = useMemo(
-    () => reconcile(Number(order?.peso_inicial ?? 0), pieces, losses),
-    [order?.peso_inicial, pieces, losses],
+    () => reconcile(Number(order?.peso_inicial ?? 0), piecesForCalc as any, losses),
+    [order?.peso_inicial, piecesForCalc, losses],
   );
 
   const tolerance = {
@@ -162,7 +276,7 @@ function MobileDesossa() {
   const colors = statusColors(status);
   const excedeu = rec.diferencaAbs > tolerance.divergenciaMaximaKg;
 
-  function addPiece() {
+  function submitPiece() {
     if (!pieceForm.corte_id) {
       toast.error("Selecione o corte");
       return;
@@ -171,47 +285,17 @@ function MobileDesossa() {
       toast.error("Informe o peso");
       return;
     }
-    const corte = cortes.find((c: any) => c.id === pieceForm.corte_id);
-    setPieces((arr) => [
-      ...arr,
-      {
-        temp_id: crypto.randomUUID(),
-        corte_id: pieceForm.corte_id,
-        peso: pieceForm.peso,
-        quantidade: pieceForm.quantidade || 1,
-        observacoes: pieceForm.observacoes || null,
-      },
-    ]);
-    setPieceForm({ corte_id: "", peso: 0, quantidade: 1, observacoes: "" });
-    setPieceDialogOpen(false);
-    toast.success(`${corte?.name ?? "Corte"} adicionado`);
-  }
-
-  function removePiece(temp_id: string) {
-    setPieces((arr) => arr.filter((x) => x.temp_id !== temp_id));
+    addPieceMut.mutate({
+      corte_id: pieceForm.corte_id,
+      peso: Number(pieceForm.peso),
+      quantidade: Number(pieceForm.quantidade || 1),
+      observacoes: pieceForm.observacoes || null,
+    });
   }
 
   const finishMut = useMutation({
     mutationFn: async ({ force }: { force: boolean }) => {
-      if (pieces.length === 0) throw new Error("Adicione ao menos um corte");
-      // Guarantee em_andamento (server fn will noop if already)
-      if (order?.status !== "em_andamento") {
-        await startOrder({ data: { order_id: id } });
-      }
-      // Persist each piece via server fn (each entry logs history)
-      for (const p of pieces) {
-        if (!p.corte_id) continue;
-        await addPieceRpc({
-          data: {
-            order_id: id,
-            corte_id: p.corte_id,
-            peso: Number(p.peso),
-            quantidade: Number(p.quantidade || 1),
-            observacoes: p.observacoes ?? null,
-          },
-        });
-      }
-      // Persist losses
+      // Garante que perdas pendentes estejam salvas antes de finalizar
       await updateLossesRpc({
         data: {
           order_id: id,
@@ -223,7 +307,6 @@ function MobileDesossa() {
           observacoes: lossObs || null,
         },
       });
-      // Finalize (server validates divergence)
       return finalizeOrder({
         data: { order_id: id, force, observacoes: obs || null },
       });
@@ -257,6 +340,8 @@ function MobileDesossa() {
   }
 
   const isAssigned = order.status === "atribuida" || order.status === "pendente";
+  const emAndamento = order.status === "em_andamento";
+  const readOnly = !emAndamento;
 
   return (
     <div className="min-h-screen bg-background pb-40">
@@ -278,7 +363,6 @@ function MobileDesossa() {
       </header>
 
       <div className="p-4 space-y-4">
-        {/* Peso inicial */}
         <div className="bg-gradient-to-br from-primary to-[oklch(0.4_0.2_15)] text-primary-foreground rounded-lg p-5 text-center relative overflow-hidden">
           <div className="absolute inset-0 opacity-10" style={{
             backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(255,255,255,0.15) 12px, rgba(255,255,255,0.15) 13px)",
@@ -307,13 +391,12 @@ function MobileDesossa() {
           </Button>
         ) : null}
 
-        {/* Cortes */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-bold">Cortes aproveitados</h2>
             <button
               className="text-xs font-bold text-primary flex items-center gap-1 disabled:opacity-40"
-              disabled={isAssigned}
+              disabled={readOnly}
               onClick={() => setPieceDialogOpen(true)}
             >
               <Plus className="size-4" /> Adicionar
@@ -325,36 +408,36 @@ function MobileDesossa() {
             </div>
           ) : (
             <div className="space-y-2">
-              {pieces.map((p, i) => {
-                const corte = cortes.find((c: any) => c.id === p.corte_id);
-                return (
-                  <div key={p.temp_id} className="bg-panel border rounded-lg p-3 flex items-center gap-3">
-                    <div className="size-8 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate">{corte?.name ?? "Corte"}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {formatKg(p.peso)} kg × {p.quantidade}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-mono font-bold text-sm">
-                        {formatKg(Number(p.peso) * Number(p.quantidade || 1), 2)}
-                      </div>
-                      <div className="text-[9px] text-muted-foreground uppercase">kg total</div>
-                    </div>
-                    <button className="p-2 text-destructive" onClick={() => removePiece(p.temp_id)}>
-                      <Trash2 className="size-4" />
-                    </button>
+              {pieces.map((p: any, i: number) => (
+                <div key={p.id} className="bg-panel border rounded-lg p-3 flex items-center gap-3">
+                  <div className="size-8 rounded bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
                   </div>
-                );
-              })}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm truncate">{p.cortes?.name ?? "Corte"}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {formatKg(p.peso)} kg × {p.quantidade}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-mono font-bold text-sm">
+                      {formatKg(Number(p.peso) * Number(p.quantidade || 1), 2)}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground uppercase">kg total</div>
+                  </div>
+                  <button
+                    className="p-2 text-destructive disabled:opacity-40"
+                    disabled={readOnly || removePieceMut.isPending}
+                    onClick={() => removePieceMut.mutate(p.id)}
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </section>
 
-        {/* Perdas */}
         <section className="space-y-3">
           <h2 className="font-bold">Perdas (kg)</h2>
           <div className="bg-panel border rounded-lg p-3 grid grid-cols-2 gap-3">
@@ -371,7 +454,10 @@ function MobileDesossa() {
                 <Label className="text-[10px] uppercase">{label}</Label>
                 <WeightInput
                   value={losses[k]}
-                  onChange={(v) => setLosses((l) => ({ ...l, [k]: v }))}
+                  onChange={(v) => {
+                    lossesHydrated.current = true;
+                    setLosses((l) => ({ ...l, [k]: v }));
+                  }}
                 />
               </div>
             ))}
@@ -380,14 +466,16 @@ function MobileDesossa() {
               <Textarea
                 rows={2}
                 value={lossObs}
-                onChange={(e) => setLossObs(e.target.value)}
+                onChange={(e) => {
+                  lossesHydrated.current = true;
+                  setLossObs(e.target.value);
+                }}
                 placeholder="Opcional"
               />
             </div>
           </div>
         </section>
 
-        {/* Conciliação */}
         {pieces.length > 0 || Object.values(losses).some((v) => v > 0) ? (
           <ReconciliationPanel
             pesoInicial={Number(order.peso_inicial)}
@@ -397,14 +485,12 @@ function MobileDesossa() {
           />
         ) : null}
 
-        {/* Observações finais */}
         <div className="space-y-2">
           <Label>Notas da execução</Label>
           <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} />
         </div>
       </div>
 
-      {/* Rodapé fixo */}
       <div className="fixed bottom-0 left-0 right-0 bg-panel border-t p-4 space-y-2 shadow-lg">
         <div className="flex items-center justify-between text-sm">
           <span className={`font-bold ${colors.text}`}>
@@ -418,7 +504,7 @@ function MobileDesossa() {
           size="lg"
           className="w-full h-14 text-base"
           onClick={handleFinishClick}
-          disabled={finishMut.isPending || pieces.length === 0 || isAssigned}
+          disabled={finishMut.isPending || pieces.length === 0 || readOnly}
         >
           {finishMut.isPending ? (
             <Loader2 className="size-5 animate-spin" />
@@ -430,7 +516,6 @@ function MobileDesossa() {
         </Button>
       </div>
 
-      {/* Dialog adicionar corte */}
       <Dialog open={pieceDialogOpen} onOpenChange={setPieceDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -497,12 +582,13 @@ function MobileDesossa() {
             <Button variant="outline" onClick={() => setPieceDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={addPiece}>Adicionar</Button>
+            <Button onClick={submitPiece} disabled={addPieceMut.isPending}>
+              {addPieceMut.isPending ? <Loader2 className="size-4 animate-spin" /> : "Adicionar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog divergência */}
       <Dialog open={divergenceOpen} onOpenChange={setDivergenceOpen}>
         <DialogContent>
           <DialogHeader>
