@@ -1,84 +1,123 @@
-Vou construir o MVP do **CarnePro** — Sistema de Gestão de Desossa — usando a direção "ERP Estruturado" que você escolheu (sidebar branca, primary `#be123c`, fonte Inter + JetBrains Mono, tema claro).
+# Fases 4–8 — MEATPRO como plataforma fiel de gestão de desossa
 
-## Escopo desta primeira entrega
+Objetivo: consolidar o MEATPRO como simulação fiel da operação de um açougue, com fluxo end-to-end, cálculos server-side, rastreabilidade completa e experiência mobile enxuta. Sem novas telas desnecessárias — foco em consistência, reuso e arquitetura preparada para ERP.
 
-O sistema é grande. Para a apresentação ao cliente, vou entregar de ponta a ponta o **fluxo operacional completo** (o que ele precisa ver funcionando), deixando cadastros auxiliares em nível funcional-porém-enxuto. Não vou fatiar em várias mensagens — entrego tudo agora.
+---
 
-### Backend (Lovable Cloud)
-Vou ativar o Lovable Cloud e criar o schema já preparado para multi-tenant (coluna `tenant_id` em todas as tabelas + RLS), operando com um único tenant nesta versão:
+## Princípios de arquitetura (aplicados a todas as fases)
 
-- `tenants`, `profiles`, `user_roles` (enum: `admin`, `acougueiro`)
-- `suppliers`, `employees`, `product_categories`, `products`
-- `stock_entries` (entrada de produtos)
-- `deboning_orders` (ordens de desossa) com status `pendente` / `em_andamento` / `finalizada`
-- `deboning_pieces` (peças extraídas)
-- `deboning_losses` (ossos, gordura, retalhos, descarte)
-- Trigger para criar perfil + role no signup
-- Função `has_role()` security-definer
-- Seed automático das categorias (Dianteiro/Traseiro Bovino, Frango, Suíno, Ovino, Miúdos, Outros) e produtos de exemplo (Picanha, Contra Filé, Alcatra, Patinho, Acém, Paleta, Peito Frango, Pernil, etc.)
+- **Zero duplicação**: antes de criar componente/hook/server fn, procurar equivalente. Refatorar antes de adicionar.
+- **Regras de negócio no servidor**: todo cálculo relevante (rendimento, divergência, custo, preço, agregações) em `createServerFn`. Frontend apenas consome DTOs.
+- **Hooks centralizam lógica de UI**: `useReconciliation`, `usePricing`, `useOrderStatus`, `useDashboardFilters`, `useNotifications`, `usePermissions` (existente).
+- **Componentização**: KPI card, ranking bar, timeline, painel de conciliação, filtros globais, dialog padrão — reaproveitados em desktop, mobile e relatórios.
+- **Design system existente**: tokens, tipografia, espaçamentos e ícones já definidos; nenhuma tela nova quebra o padrão.
+- **Escalabilidade**: colunas e nomenclatura preparadas para multiempresa (`tenant_id` já presente), lotes, códigos de barras, balanças (via `WeightInput` existente), etiquetas.
+- **Sem regressão**: checklist funcional ao fim de cada fase; `tsgo --noEmit` limpo.
 
-### Autenticação
-- Email/senha (sem confirmação de email para agilizar demo)
-- Google sign-in (via broker Lovable)
-- Página `/auth` pública
+---
 
-### Áreas construídas
+## Fase 4 — Fluxo operacional end-to-end com rastreabilidade
 
-**Admin (desktop, layout ERP com sidebar):**
-1. **Dashboard** — 4 KPIs (Desossas hoje, Peso recebido, Peso aproveitado, Rendimento %), gráfico de aproveitamento histórico (Recharts), tabela de ordens em andamento, ranking de fornecedores e açougueiros
-2. **Fornecedores** — CRUD completo (Razão Social, CNPJ, contato, telefone, email, observações)
-3. **Funcionários** — CRUD (nome, CPF, cargo, status). Criação de login separada em fluxo simplificado.
-4. **Produtos & Categorias** — CRUD unificado com filtro por categoria
-5. **Entrada de Produtos** — registro de peso bruto por fornecedor/produto/lote/nota
-6. **Ordens de Desossa** — criar ordem (produto, fornecedor, peso inicial, açougueiro), listar por status, ver detalhes/conciliação
-7. **Relatórios** — filtros por período/fornecedor/produto/funcionário/categoria, tabela + gráficos (exportação Excel/PDF fica para v2, conforme brief)
+**Vínculo obrigatório Entrada → Ordem**
+- `deboning_orders.stock_entry_id` passa a ser NOT NULL (migration com backfill para ordens legadas via `is_demo`/limpeza controlada).
+- Criação de ordem exige selecionar uma Entrada de Mercadoria; peça, fornecedor, peso recebido e lote (quando houver) herdam da entrada e ficam somente-leitura na ordem.
+- `stock_entries` ganha campo `lote` (opcional) e `saldo_disponivel_kg` (calculado) para impedir criar ordens com peso inicial > saldo.
 
-**Açougueiro (mobile-first):**
-1. **Minhas Desossas** — cards das ordens atribuídas
-2. **Execução da desossa** — header preto com produto + peso inicial + peso aproveitado em tempo real, lista de peças adicionadas, botão "Adicionar peça" (dialog com produto + peso + quantidade + obs), seção de perdas (ossos, gordura, retalhos, descarte, outros), rodapé fixo com saldo restante e "Finalizar Desossa"
-3. **Conciliação automática** ao finalizar: Peso Inicial − peças − perdas = Saldo. Divergência > 2% destacada em vermelho.
+**Identificação sequencial**
+- Sequence `deboning_order_seq` por tenant + função `next_order_code(tenant)` retornando `OD-000001`. Gerada server-side no `createOrder`; nunca no cliente.
+- Cabeçalho da ordem exibe: código, data, hora, responsável, fornecedor, peça, lote.
 
-### Cálculos automáticos
-Rendimento %, Perda %, peso aproveitado/descartado, aproveitamento por fornecedor/produto/funcionário, custo por kg, preço sugerido (com margem configurável simples).
+**Transições e histórico**
+- Server functions dedicadas: `createOrder`, `assignOrder`, `startOrder`, `addPiece`, `updatePiece`, `deletePiece`, `updateLosses`, `updatePesoInicial`, `updateValorCompra`, `updateMargem`, `finishOrder`, `cancelOrder`. Cada uma:
+  - valida permissão (has_role) e estado atual;
+  - persiste alteração;
+  - grava `deboning_order_history` com `user_id`, `event_type`, `field`, `old_value`, `new_value`, `created_at`;
+  - dispara `notifications` para o público correto;
+  - retorna DTO atualizado para invalidação de cache.
+- Realtime apenas em `notifications` (canal único no `__root.tsx`, teardown no unmount).
+- Cache TanStack invalidado por chave após cada mutação: `orders`, `order-detail`, `notifications`, `dashboard-*`, `stock-entries`.
 
-### Design System
-Vou portar os tokens do protótipo direto para `src/styles.css` em `oklch`:
-- Primary `#be123c` (vermelho industrial)
-- Background `#f8fafc`, panels brancos, borders `#e2e8f0`
-- Fontes Inter (UI) + JetBrains Mono (números tabulares)
-- Sidebar branca com ícones Lucide, KPIs com `tabular-nums`, animação `fade-in` suave
+## Fase 5 — Conciliação em tempo real (server-side)
 
-### Rotas
+- Novo hook `useReconciliation` consome server fn `computeReconciliation(orderId)` OU, para inputs ainda não persistidos, executa fórmula pura idêntica à do servidor (mesma função exportada de `deboning-calcs.ts`, já usada nos dois lados).
+- Painel único de conciliação (componente existente) atualiza em tempo real conforme cortes/perdas são digitados; cores de tolerância vindas de `tenant_settings`.
+- Finalização bloqueada fora da tolerância exceto com justificativa (fluxo atual). Mensagens revisadas.
+
+## Fase 6 — Dashboards e indicadores
+
+**Filtros globais** (componente `<DashboardFilters>` reaproveitado em dashboard e relatórios): período, fornecedor, peça, categoria, açougueiro, funcionário.
+
+**Indicadores operacionais** (server fn `getOperationalKpis(filters)`):
+- kg processados dia/mês, nº de ordens no período, tempo médio de desossa por peça e por açougueiro, aproveitamento médio por categoria/fornecedor/peça, índice médio de perdas.
+
+**Dashboard Executivo** (server fn `getExecutiveKpis(filters)`):
+- Lucro estimado, receita estimada, custo médio por kg, melhor fornecedor, fornecedor com maior perda, melhor rendimento por peça, melhor rendimento por funcionário, peças mais processadas.
+
+**Gráficos** (Recharts, componentes `<KpiCard>`, `<RankingBar>`, `<TrendLine>`, `<LossPie>`):
+- Evolução mensal de rendimento e perdas (linha).
+- Rankings top 5: fornecedores, açougueiros, peças com maior/menor rendimento.
+- Composição de perdas.
+
+Toda query agregada é server-side, com `requireSupabaseAuth` e agregação em SQL (não busca linhas cruas para agregar no cliente).
+
+## Fase 7 — Precificação
+
+- Server fn `computePricing({ orderId, margemPct })`: custo real por kg, preço sugerido, receita estimada (preço × aproveitado), lucro estimado (receita − valor compra).
+- Hook `usePricing(orderId)` alimenta o simulador na tela de detalhe e um bloco resumido no dashboard executivo.
+- Persistência de `valor_compra` e `margem_pct` gera evento no histórico com valor anterior/novo.
+- `tenant_settings.margem_padrao_pct` continua sendo default.
+
+## Fase 8 — Mobile + Modo Demonstração
+
+**Mobile (prioridade máxima)** — fluxo mínimo de cliques:
 ```
-/                            landing público com CTA "Entrar"
-/auth                        login + cadastro
-/_authenticated/
-  ├─ dashboard               (admin)
-  ├─ fornecedores
-  ├─ funcionarios
-  ├─ produtos
-  ├─ entradas
-  ├─ ordens                  (lista + criar + detalhe)
-  ├─ ordens/$id
-  ├─ relatorios
-  └─ mobile/                 (interface do açougueiro)
-      ├─ index               (Minhas Desossas)
-      └─ desossa/$id         (execução)
+Selecionar ordem → Confirmar peso inicial → [ Selecionar corte → Peso → Confirmar ]* → Perdas → Resumo → Finalizar
 ```
-Roteamento por role: açougueiros caem em `/mobile`; admins caem em `/dashboard`.
+- Botões min 56px, teclado numérico (`inputMode="decimal"`), painel de conciliação sticky no topo.
+- Feedback: toast curto + `navigator.vibrate(30)` ao confirmar corte.
+- Tela de resumo lista cortes + perdas + status de conciliação com botão único "Finalizar desossa".
+- Sem formulários longos; cada passo em uma tela.
 
-## Detalhes técnicos
-- TanStack Start + Router + Query
-- `createServerFn` com `requireSupabaseAuth` para mutations sensíveis
-- RLS por `tenant_id` usando `has_tenant()` + `has_role()`
-- shadcn/ui customizado com os tokens ERP
-- Recharts para gráficos
-- Responsivo total: sidebar colapsa em mobile via Sheet
+**Modo Demonstração** (server fn admin-only `reloadDemoData`):
+- Migration adiciona `is_demo boolean default false` nas tabelas semeadas.
+- Seed idempotente: 3 fornecedores, 5 funcionários (2 açougueiros), 8 entradas em 60 dias, 12 ordens em estados variados (2 pendentes, 2 atribuídas, 2 em execução, 5 finalizadas OK, 1 com divergência), peças/perdas/histórico/notificações coerentes.
+- Botão "Recarregar dados de demonstração" em `configuracoes` (admin), limpa apenas `is_demo=true` e recria.
 
-## Fora de escopo desta versão (declarado)
-- Exportação real Excel/PDF (marcado como "em breve")
-- Multi-tenant switcher de UI (arquitetura pronta, sem UI ainda)
-- Password reset flow (podemos adicionar depois se quiser)
-- Cadastro de senha para açougueiro pelo admin com API Auth Admin — nesta versão o açougueiro faz o próprio signup e o admin vincula ele à lista de funcionários por email
+---
 
-Confirma que posso seguir com esse escopo?
+## Preparação para evolução (sem implementar agora)
+
+Colunas/estrutura já compatíveis: `lote` em entrada, `barcode` reservado em produtos/cortes, `WeightInput` já isolado para balança, `tenant_id` em toda linha, server fns idempotentes prontas para expor via API pública futura.
+
+## Revisão técnica ao fim de cada fase
+
+Checklist:
+- [ ] Sem duplicação de código (componentes/hooks/server fns).
+- [ ] Cálculos idênticos entre desktop, mobile, dashboard e relatórios.
+- [ ] Cada transição: history + notification + cache invalidado.
+- [ ] Filtros dos dashboards funcionam e são reaproveitados.
+- [ ] Mobile navegável com uma mão.
+- [ ] Permissões respeitadas em rota e em server fn.
+- [ ] Sem regressão nas fases 1–3.
+- [ ] `tsgo --noEmit` limpo; imports/arquivos órfãos removidos.
+- [ ] Resumo técnico das melhorias entregue no fim da fase.
+
+---
+
+## Estrutura de pastas alvo
+
+```
+src/
+  components/         # UI reutilizável (KpiCard, RankingBar, DashboardFilters, ...)
+  hooks/              # useReconciliation, usePricing, useDashboardFilters, ...
+  lib/
+    orders.functions.ts        # createOrder, assign, start, addPiece, finish, ...
+    dashboard.functions.ts     # getOperationalKpis, getExecutiveKpis, rankings
+    pricing.functions.ts       # computePricing
+    demo.functions.ts          # reloadDemoData
+    deboning-calcs.ts          # fórmula pura compartilhada
+    order-history.ts           # helpers de log (já existe, ampliado)
+  routes/             # sem novas rotas nesta etapa
+```
+
+Arquivos grandes existentes (`ordens.$id.tsx`, `mobile/desossa.$id.tsx`) serão divididos em subcomponentes quando ultrapassarem responsabilidades claras.
