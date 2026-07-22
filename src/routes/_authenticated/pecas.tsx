@@ -29,7 +29,7 @@ import { Switch } from "@/components/ui/switch";
 export const Route = createFileRoute("/_authenticated/pecas")({
   head: () => ({
     meta: [
-      { title: "Peças de Entrada — CarnePro" },
+      { title: "Peças de Entrada — PRO MEAT" },
       { name: "description", content: "Cadastro das peças recebidas do fornecedor." },
     ],
   }),

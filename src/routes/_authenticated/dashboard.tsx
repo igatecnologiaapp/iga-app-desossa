@@ -40,7 +40,7 @@ import {
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — CarnePro" },
+      { title: "Dashboard — PRO MEAT" },
       { name: "description", content: "Painel gerencial da desossa: rendimento, ordens, fornecedores e produtividade." },
     ],
   }),

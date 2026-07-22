@@ -11,7 +11,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 export const Route = createFileRoute("/_authenticated/mobile/")({
   head: () => ({
     meta: [
-      { title: "Minhas Desossas — CarnePro" },
+      { title: "Minhas Desossas — PRO MEAT" },
       { name: "description", content: "Ordens atribuídas para o açougueiro." },
     ],
   }),

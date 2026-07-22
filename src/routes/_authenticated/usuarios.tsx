@@ -29,7 +29,7 @@ import { adminCreateUser, adminUpdateUser, adminResetPassword, adminDeleteUser }
 export const Route = createFileRoute("/_authenticated/usuarios")({
   head: () => ({
     meta: [
-      { title: "Usuários — CarnePro" },
+      { title: "Usuários — PRO MEAT" },
       { name: "description", content: "Gestão de usuários e perfis do sistema." },
     ],
   }),

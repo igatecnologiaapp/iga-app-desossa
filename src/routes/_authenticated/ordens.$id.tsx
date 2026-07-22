@@ -29,7 +29,7 @@ import { ArrowLeft, DollarSign, Clock, Calculator } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/ordens/$id")({
   head: () => ({
     meta: [
-      { title: "Detalhe da Ordem — CarnePro" },
+      { title: "Detalhe da Ordem — PRO MEAT" },
       { name: "description", content: "Detalhe, conciliação e precificação da ordem de desossa." },
     ],
   }),

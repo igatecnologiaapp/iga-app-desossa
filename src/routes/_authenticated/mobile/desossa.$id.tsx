@@ -47,7 +47,7 @@ import {
 export const Route = createFileRoute("/_authenticated/mobile/desossa/$id")({
   head: () => ({
     meta: [
-      { title: "Execução — CarnePro" },
+      { title: "Execução — PRO MEAT" },
       { name: "description", content: "Execução da desossa pelo açougueiro." },
     ],
   }),

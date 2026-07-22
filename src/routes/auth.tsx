@@ -12,8 +12,8 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Entrar — CarnePro" },
-      { name: "description", content: "Acesso ao CarnePro — sistema de gestão de desossa." },
+      { title: "Entrar — PRO MEAT" },
+      { name: "description", content: "Acesso ao PRO MEAT — sistema de gestão de desossa." },
     ],
   }),
   component: AuthPage,
@@ -85,7 +85,7 @@ function AuthPage() {
               C
             </div>
             <div>
-              <div className="font-bold tracking-tight text-2xl leading-none">CARNEPRO</div>
+              <div className="font-bold tracking-tight text-2xl leading-none">PRO MEAT</div>
               <div className="text-[10px] uppercase tracking-widest opacity-80 mt-1">
                 Sistema de Gestão de Desossa
               </div>

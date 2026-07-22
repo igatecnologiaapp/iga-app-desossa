@@ -33,7 +33,7 @@ import { createOrder as createOrderFn, cancelOrder as cancelOrderFn } from "@/li
 export const Route = createFileRoute("/_authenticated/ordens")({
   head: () => ({
     meta: [
-      { title: "Ordens de Desossa — CarnePro" },
+      { title: "Ordens de Desossa — PRO MEAT" },
       { name: "description", content: "Gestão do ciclo completo das ordens de desossa." },
     ],
   }),

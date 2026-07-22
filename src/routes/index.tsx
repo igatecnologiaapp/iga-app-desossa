@@ -121,7 +121,7 @@ function Landing() {
 
       <footer className="border-t bg-panel">
         <div className="max-w-6xl mx-auto px-6 py-6 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} CarnePro · Sistema de Gestão de Desossa
+          © {new Date().getFullYear()} PRO MEAT · Sistema de Gestão de Desossa
         </div>
       </footer>
     </div>

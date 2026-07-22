@@ -25,7 +25,7 @@ import {
 } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
-  head: () => ({ meta: [{ title: "Relatórios — CarnePro" }] }),
+  head: () => ({ meta: [{ title: "Relatórios — PRO MEAT" }] }),
   beforeLoad: ({ context }) => assertAnyRole((context as any).roles ?? [], ["admin", "supervisor", "visualizacao"]),
   component: Relatorios,
 });
