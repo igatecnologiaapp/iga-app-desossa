@@ -135,6 +135,24 @@ function Ordens() {
     },
   });
 
+  const { data: stockEntries = [] } = useQuery({
+    queryKey: ["stock-entries-min"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("stock_entries")
+        .select(
+          `id, entry_date, peso_bruto, purchase_value, lote, invoice_number,
+           supplier_id, product_id,
+           suppliers:supplier_id(razao_social),
+           products:product_id(name)`,
+        )
+        .order("entry_date", { ascending: false })
+        .limit(200);
+      return data ?? [];
+    },
+  });
+
+
   const selectedPeca: any = pecas.find((p: any) => p.id === form.peca_entrada_id);
 
   const createMut = useMutation({
