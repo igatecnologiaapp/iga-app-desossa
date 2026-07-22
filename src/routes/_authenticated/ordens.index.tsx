@@ -149,9 +149,9 @@ function Ordens() {
         .from("stock_entries")
         .select(
           `id, entry_date, peso_bruto, purchase_value, lote, invoice_number,
-           supplier_id, product_id,
+           supplier_id, peca_entrada_id,
            suppliers:supplier_id(razao_social),
-           products:product_id(name)`,
+           pecas_entrada:peca_entrada_id(name)`,
         )
         .order("entry_date", { ascending: false })
         .limit(200);
