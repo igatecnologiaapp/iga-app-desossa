@@ -747,6 +747,7 @@ export type Database = {
           is_demo: boolean
           lote: string | null
           observacoes: string | null
+          peca_entrada_id: string | null
           peso_bruto: number
           product_id: string | null
           purchase_value: number | null
@@ -761,6 +762,7 @@ export type Database = {
           is_demo?: boolean
           lote?: string | null
           observacoes?: string | null
+          peca_entrada_id?: string | null
           peso_bruto: number
           product_id?: string | null
           purchase_value?: number | null
@@ -775,6 +777,7 @@ export type Database = {
           is_demo?: boolean
           lote?: string | null
           observacoes?: string | null
+          peca_entrada_id?: string | null
           peso_bruto?: number
           product_id?: string | null
           purchase_value?: number | null
@@ -782,6 +785,13 @@ export type Database = {
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "stock_entries_peca_entrada_id_fkey"
+            columns: ["peca_entrada_id"]
+            isOneToOne: false
+            referencedRelation: "pecas_entrada"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stock_entries_product_id_fkey"
             columns: ["product_id"]
