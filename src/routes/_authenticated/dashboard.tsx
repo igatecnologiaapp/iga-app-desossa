@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { assertAnyRole } from "@/lib/route-guards";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "description", content: "Painel gerencial da desossa: rendimento, ordens, fornecedores e produtividade." },
     ],
   }),
+  beforeLoad: ({ context }) => assertAnyRole((context as any).roles ?? [], ["admin", "supervisor", "visualizacao"]),
   component: Dashboard,
 });
 

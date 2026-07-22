@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { assertAnyRole } from "@/lib/route-guards";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/pecas")({
       { name: "description", content: "Cadastro das peças recebidas do fornecedor." },
     ],
   }),
+  beforeLoad: ({ context }) => assertAnyRole((context as any).roles ?? [], ["admin"]),
   component: PecasEntrada,
 });
 
