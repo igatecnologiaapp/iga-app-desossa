@@ -583,3 +583,130 @@ export const deleteOrder = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+// ------------------------------------------------------------
+// updateOrderMetadata — admin/supervisor. Corrige açougueiro,
+// valor de compra e observações em ordens não finalizadas.
+// ------------------------------------------------------------
+export const updateOrderMetadata = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (data: {
+      order_id: string;
+      assigned_employee_id?: string | null;
+      valor_compra?: number | null;
+      observacoes?: string | null;
+    }) => {
+      if (!data.order_id) throw new Error("Ordem inválida.");
+      return data;
+    },
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const roles = await fetchRoles(supabase, userId);
+    ensureRole(roles, ["admin", "supervisor"]);
+
+    const order = await fetchOrderStrict(supabase, data.order_id);
+    ensureStatus(order.status, [
+      "pendente",
+      "atribuida",
+      "em_andamento",
+      "aguardando_conferencia",
+    ]);
+
+    const { data: cur } = await supabase
+      .from("deboning_orders")
+      .select("valor_compra, observacoes")
+      .eq("id", data.order_id)
+      .maybeSingle();
+
+    const updates: Record<string, unknown> = {};
+    const changes: Array<{ field: string; oldValue: string; newValue: string; notes: string }> = [];
+
+    if (data.assigned_employee_id !== undefined) {
+      const newEmp = data.assigned_employee_id || null;
+      if (newEmp !== order.assigned_employee_id) {
+        updates.assigned_employee_id = newEmp;
+        let oldName: string | null = null;
+        let newName: string | null = null;
+        if (order.assigned_employee_id) {
+          const { data: e } = await supabase
+            .from("employees")
+            .select("full_name")
+            .eq("id", order.assigned_employee_id)
+            .maybeSingle();
+          oldName = e?.full_name ?? null;
+        }
+        if (newEmp) {
+          const { data: e } = await supabase
+            .from("employees")
+            .select("full_name, user_id")
+            .eq("id", newEmp)
+            .maybeSingle();
+          newName = e?.full_name ?? null;
+          if (e?.user_id) {
+            await notifyUser(supabase, {
+              userId: e.user_id,
+              type: "ordem_atribuida",
+              title: "Ordem atribuída para você",
+              body: order.order_code ?? undefined,
+              orderId: data.order_id,
+            });
+          }
+        }
+        changes.push({
+          field: "assigned_employee_id",
+          oldValue: oldName ?? "—",
+          newValue: newName ?? "—",
+          notes: `Açougueiro alterado: ${oldName ?? "—"} → ${newName ?? "—"}`,
+        });
+      }
+    }
+
+    if (data.valor_compra !== undefined) {
+      const old = (cur as any)?.valor_compra ?? null;
+      if (Number(old ?? 0) !== Number(data.valor_compra ?? 0)) {
+        updates.valor_compra = data.valor_compra;
+        changes.push({
+          field: "valor_compra",
+          oldValue: old != null ? String(old) : "—",
+          newValue: data.valor_compra != null ? String(data.valor_compra) : "—",
+          notes: `Valor de compra atualizado`,
+        });
+      }
+    }
+
+    if (data.observacoes !== undefined) {
+      const old = ((cur as any)?.observacoes ?? "") as string;
+      const next = (data.observacoes ?? "") as string;
+      if (old !== next) {
+        updates.observacoes = data.observacoes;
+        changes.push({
+          field: "observacoes",
+          oldValue: old || "—",
+          newValue: next || "—",
+          notes: `Observações atualizadas`,
+        });
+      }
+    }
+
+    if (Object.keys(updates).length === 0) return { ok: true, changed: false };
+
+    const { error } = await supabase
+      .from("deboning_orders")
+      .update(updates)
+      .eq("id", data.order_id);
+    if (error) throw new Error(error.message);
+
+    for (const c of changes) {
+      await logHistory(supabase, userId, {
+        orderId: data.order_id,
+        action: "status_alterado",
+        field: c.field,
+        oldValue: c.oldValue,
+        newValue: c.newValue,
+        notes: c.notes,
+      });
+    }
+    return { ok: true, changed: true };
+  });
