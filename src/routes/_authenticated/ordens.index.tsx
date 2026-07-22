@@ -397,8 +397,8 @@ function Ordens() {
                     ) : (
                       stockEntries.map((e: any) => (
                         <SelectItem key={e.id} value={e.id}>
-                          {formatDate(e.entry_date)} · {e.suppliers?.razao_social ?? "—"} ·{" "}
-                          {formatKg(e.peso_bruto, 2)} kg
+                          {formatDate(e.entry_date)} · {e.pecas_entrada?.name ?? "—"} ·{" "}
+                          {e.suppliers?.razao_social ?? "—"} · {formatKg(e.peso_bruto, 2)} kg
                           {e.lote ? ` · Lote ${e.lote}` : ""}
                         </SelectItem>
                       ))
