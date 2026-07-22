@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Bell, CheckCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserContext } from "@/hooks/use-auth";
@@ -13,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/format";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
+import { markNotificationsRead as markNotificationsReadFn } from "@/lib/notifications.functions";
+
 
 interface Notification {
   id: string;
@@ -64,24 +67,24 @@ export function NotificationsBell() {
     };
   }, [userId, qc]);
 
+  const markReadRpc = useServerFn(markNotificationsReadFn);
+
   const markAll = useMutation({
     mutationFn: async () => {
       const ids = notifications.filter((n) => !n.read_at).map((n) => n.id);
       if (ids.length === 0) return;
-      await supabase
-        .from("notifications")
-        .update({ read_at: new Date().toISOString() })
-        .in("id", ids);
+      await markReadRpc({ data: { ids } });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications", userId] }),
   });
 
   const markOne = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
+      await markReadRpc({ data: { ids: [id] } });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications", userId] }),
   });
+
 
   if (!userId) return null;
 
