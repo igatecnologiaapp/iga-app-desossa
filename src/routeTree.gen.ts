@@ -17,13 +17,13 @@ import { Route as AuthenticatedRendimentoRouteImport } from './routes/_authentic
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
 import { Route as AuthenticatedPecasRouteImport } from './routes/_authenticated/pecas'
-import { Route as AuthenticatedOrdensRouteImport } from './routes/_authenticated/ordens'
 import { Route as AuthenticatedFuncionariosRouteImport } from './routes/_authenticated/funcionarios'
 import { Route as AuthenticatedFornecedoresRouteImport } from './routes/_authenticated/fornecedores'
 import { Route as AuthenticatedEntradasRouteImport } from './routes/_authenticated/entradas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCortesRouteImport } from './routes/_authenticated/cortes'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedOrdensIndexRouteImport } from './routes/_authenticated/ordens.index'
 import { Route as AuthenticatedMobileIndexRouteImport } from './routes/_authenticated/mobile/index'
 import { Route as AuthenticatedOrdensIdRouteImport } from './routes/_authenticated/ordens.$id'
 import { Route as AuthenticatedMobileDesossaIdRouteImport } from './routes/_authenticated/mobile/desossa.$id'
@@ -67,11 +67,6 @@ const AuthenticatedPecasRoute = AuthenticatedPecasRouteImport.update({
   path: '/pecas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedOrdensRoute = AuthenticatedOrdensRouteImport.update({
-  id: '/ordens',
-  path: '/ordens',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedFuncionariosRoute =
   AuthenticatedFuncionariosRouteImport.update({
     id: '/funcionarios',
@@ -105,6 +100,12 @@ const AuthenticatedConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOrdensIndexRoute =
+  AuthenticatedOrdensIndexRouteImport.update({
+    id: '/ordens/',
+    path: '/ordens/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMobileIndexRoute =
   AuthenticatedMobileIndexRouteImport.update({
     id: '/mobile/',
@@ -112,9 +113,9 @@ const AuthenticatedMobileIndexRoute =
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOrdensIdRoute = AuthenticatedOrdensIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedOrdensRoute,
+  id: '/ordens/$id',
+  path: '/ordens/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMobileDesossaIdRoute =
   AuthenticatedMobileDesossaIdRouteImport.update({
@@ -132,7 +133,6 @@ export interface FileRoutesByFullPath {
   '/entradas': typeof AuthenticatedEntradasRoute
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
-  '/ordens': typeof AuthenticatedOrdensRouteWithChildren
   '/pecas': typeof AuthenticatedPecasRoute
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
@@ -140,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/ordens/$id': typeof AuthenticatedOrdensIdRoute
   '/mobile/': typeof AuthenticatedMobileIndexRoute
+  '/ordens/': typeof AuthenticatedOrdensIndexRoute
   '/mobile/desossa/$id': typeof AuthenticatedMobileDesossaIdRoute
 }
 export interface FileRoutesByTo {
@@ -151,7 +152,6 @@ export interface FileRoutesByTo {
   '/entradas': typeof AuthenticatedEntradasRoute
   '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/funcionarios': typeof AuthenticatedFuncionariosRoute
-  '/ordens': typeof AuthenticatedOrdensRouteWithChildren
   '/pecas': typeof AuthenticatedPecasRoute
   '/produtos': typeof AuthenticatedProdutosRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
@@ -159,6 +159,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/ordens/$id': typeof AuthenticatedOrdensIdRoute
   '/mobile': typeof AuthenticatedMobileIndexRoute
+  '/ordens': typeof AuthenticatedOrdensIndexRoute
   '/mobile/desossa/$id': typeof AuthenticatedMobileDesossaIdRoute
 }
 export interface FileRoutesById {
@@ -172,7 +173,6 @@ export interface FileRoutesById {
   '/_authenticated/entradas': typeof AuthenticatedEntradasRoute
   '/_authenticated/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/_authenticated/funcionarios': typeof AuthenticatedFuncionariosRoute
-  '/_authenticated/ordens': typeof AuthenticatedOrdensRouteWithChildren
   '/_authenticated/pecas': typeof AuthenticatedPecasRoute
   '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
@@ -180,6 +180,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/ordens/$id': typeof AuthenticatedOrdensIdRoute
   '/_authenticated/mobile/': typeof AuthenticatedMobileIndexRoute
+  '/_authenticated/ordens/': typeof AuthenticatedOrdensIndexRoute
   '/_authenticated/mobile/desossa/$id': typeof AuthenticatedMobileDesossaIdRoute
 }
 export interface FileRouteTypes {
@@ -193,7 +194,6 @@ export interface FileRouteTypes {
     | '/entradas'
     | '/fornecedores'
     | '/funcionarios'
-    | '/ordens'
     | '/pecas'
     | '/produtos'
     | '/relatorios'
@@ -201,6 +201,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/ordens/$id'
     | '/mobile/'
+    | '/ordens/'
     | '/mobile/desossa/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -212,7 +213,6 @@ export interface FileRouteTypes {
     | '/entradas'
     | '/fornecedores'
     | '/funcionarios'
-    | '/ordens'
     | '/pecas'
     | '/produtos'
     | '/relatorios'
@@ -220,6 +220,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/ordens/$id'
     | '/mobile'
+    | '/ordens'
     | '/mobile/desossa/$id'
   id:
     | '__root__'
@@ -232,7 +233,6 @@ export interface FileRouteTypes {
     | '/_authenticated/entradas'
     | '/_authenticated/fornecedores'
     | '/_authenticated/funcionarios'
-    | '/_authenticated/ordens'
     | '/_authenticated/pecas'
     | '/_authenticated/produtos'
     | '/_authenticated/relatorios'
@@ -240,6 +240,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/_authenticated/ordens/$id'
     | '/_authenticated/mobile/'
+    | '/_authenticated/ordens/'
     | '/_authenticated/mobile/desossa/$id'
   fileRoutesById: FileRoutesById
 }
@@ -307,13 +308,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPecasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ordens': {
-      id: '/_authenticated/ordens'
-      path: '/ordens'
-      fullPath: '/ordens'
-      preLoaderRoute: typeof AuthenticatedOrdensRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/funcionarios': {
       id: '/_authenticated/funcionarios'
       path: '/funcionarios'
@@ -356,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ordens/': {
+      id: '/_authenticated/ordens/'
+      path: '/ordens'
+      fullPath: '/ordens/'
+      preLoaderRoute: typeof AuthenticatedOrdensIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/mobile/': {
       id: '/_authenticated/mobile/'
       path: '/mobile'
@@ -365,10 +366,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/ordens/$id': {
       id: '/_authenticated/ordens/$id'
-      path: '/$id'
+      path: '/ordens/$id'
       fullPath: '/ordens/$id'
       preLoaderRoute: typeof AuthenticatedOrdensIdRouteImport
-      parentRoute: typeof AuthenticatedOrdensRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/mobile/desossa/$id': {
       id: '/_authenticated/mobile/desossa/$id'
@@ -380,17 +381,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedOrdensRouteChildren {
-  AuthenticatedOrdensIdRoute: typeof AuthenticatedOrdensIdRoute
-}
-
-const AuthenticatedOrdensRouteChildren: AuthenticatedOrdensRouteChildren = {
-  AuthenticatedOrdensIdRoute: AuthenticatedOrdensIdRoute,
-}
-
-const AuthenticatedOrdensRouteWithChildren =
-  AuthenticatedOrdensRoute._addFileChildren(AuthenticatedOrdensRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCortesRoute: typeof AuthenticatedCortesRoute
@@ -398,13 +388,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEntradasRoute: typeof AuthenticatedEntradasRoute
   AuthenticatedFornecedoresRoute: typeof AuthenticatedFornecedoresRoute
   AuthenticatedFuncionariosRoute: typeof AuthenticatedFuncionariosRoute
-  AuthenticatedOrdensRoute: typeof AuthenticatedOrdensRouteWithChildren
   AuthenticatedPecasRoute: typeof AuthenticatedPecasRoute
   AuthenticatedProdutosRoute: typeof AuthenticatedProdutosRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedRendimentoRoute: typeof AuthenticatedRendimentoRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
+  AuthenticatedOrdensIdRoute: typeof AuthenticatedOrdensIdRoute
   AuthenticatedMobileIndexRoute: typeof AuthenticatedMobileIndexRoute
+  AuthenticatedOrdensIndexRoute: typeof AuthenticatedOrdensIndexRoute
   AuthenticatedMobileDesossaIdRoute: typeof AuthenticatedMobileDesossaIdRoute
 }
 
@@ -415,13 +406,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEntradasRoute: AuthenticatedEntradasRoute,
   AuthenticatedFornecedoresRoute: AuthenticatedFornecedoresRoute,
   AuthenticatedFuncionariosRoute: AuthenticatedFuncionariosRoute,
-  AuthenticatedOrdensRoute: AuthenticatedOrdensRouteWithChildren,
   AuthenticatedPecasRoute: AuthenticatedPecasRoute,
   AuthenticatedProdutosRoute: AuthenticatedProdutosRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedRendimentoRoute: AuthenticatedRendimentoRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
+  AuthenticatedOrdensIdRoute: AuthenticatedOrdensIdRoute,
   AuthenticatedMobileIndexRoute: AuthenticatedMobileIndexRoute,
+  AuthenticatedOrdensIndexRoute: AuthenticatedOrdensIndexRoute,
   AuthenticatedMobileDesossaIdRoute: AuthenticatedMobileDesossaIdRoute,
 }
 

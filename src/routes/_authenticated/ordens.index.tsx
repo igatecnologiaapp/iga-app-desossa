@@ -30,7 +30,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { WeightInput } from "@/components/weight-input";
 import { createOrder as createOrderFn, cancelOrder as cancelOrderFn } from "@/lib/orders.functions";
 
-export const Route = createFileRoute("/_authenticated/ordens")({
+export const Route = createFileRoute("/_authenticated/ordens/")({
   head: () => ({
     meta: [
       { title: "Ordens de Desossa — PRO MEAT" },
