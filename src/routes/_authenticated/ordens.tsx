@@ -72,6 +72,7 @@ function Ordens() {
   const [cancelReason, setCancelReason] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [form, setForm] = useState({
+    stock_entry_id: "",
     peca_entrada_id: "",
     category_id: "",
     supplier_id: "",
@@ -81,6 +82,7 @@ function Ordens() {
     valor_compra: "",
     observacoes: "",
   });
+
 
   const { data: orders = [] } = useQuery({
     queryKey: ["orders-list"],
