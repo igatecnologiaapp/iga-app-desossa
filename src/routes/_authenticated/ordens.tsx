@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { assertAnyRole } from "@/lib/route-guards";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -25,9 +26,9 @@ import {
 import { Plus, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatKg, formatDate } from "@/lib/format";
-import { logOrderHistory, notify, notifyAdmins } from "@/lib/order-history";
 import { usePermissions } from "@/hooks/use-permissions";
 import { WeightInput } from "@/components/weight-input";
+import { createOrder as createOrderFn, cancelOrder as cancelOrderFn } from "@/lib/orders.functions";
 
 export const Route = createFileRoute("/_authenticated/ordens")({
   head: () => ({
