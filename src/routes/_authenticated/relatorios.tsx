@@ -1,12 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { assertAnyRole } from "@/lib/route-guards";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { formatKg, formatPercent } from "@/lib/format";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getExecutiveKPIs,
   getYieldAnalysis,
@@ -34,6 +42,41 @@ function Relatorios() {
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [margem, setMargem] = useState<number>(30);
+  const [supplierId, setSupplierId] = useState<string>("");
+  const [employeeId, setEmployeeId] = useState<string>("");
+  const [pecaId, setPecaId] = useState<string>("");
+  const [status, setStatus] = useState<string>("");
+
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["rep-suppliers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("suppliers").select("id, razao_social").order("razao_social");
+      return data ?? [];
+    },
+  });
+  const { data: employees = [] } = useQuery({
+    queryKey: ["rep-employees"],
+    queryFn: async () => {
+      const { data } = await supabase.from("employees").select("id, full_name").order("full_name");
+      return data ?? [];
+    },
+  });
+  const { data: pecas = [] } = useQuery({
+    queryKey: ["rep-pecas"],
+    queryFn: async () => {
+      const { data } = await supabase.from("pecas_entrada").select("id, name").eq("active", true).order("name");
+      return data ?? [];
+    },
+  });
+
+  const drillSearch: Record<string, string> = {};
+  if (supplierId) drillSearch.supplier_id = supplierId;
+  if (employeeId) drillSearch.employee_id = employeeId;
+  if (pecaId) drillSearch.peca_entrada_id = pecaId;
+  if (status) drillSearch.status = status;
+  if (from) drillSearch.date_from = from;
+  if (to) drillSearch.date_to = to;
+  const hasDrill = Object.keys(drillSearch).length > 0;
 
   const period = { from: from || null, to: to || null };
 
