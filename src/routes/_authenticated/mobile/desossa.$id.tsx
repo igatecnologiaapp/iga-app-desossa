@@ -132,33 +132,18 @@ function MobileDesossa() {
 
   const cortes = cortesDisponiveis.length > 0 ? cortesDisponiveis : cortesFallback;
 
-  // Auto-log da atribuição/status
+  const startOrder = useServerFn(startOrderFn);
+  const addPieceRpc = useServerFn(addPieceFn);
+  const updateLossesRpc = useServerFn(updateLossesFn);
+  const finalizeOrder = useServerFn(finalizeOrderFn);
+
   const startMut = useMutation({
-    mutationFn: async () => {
-      const now = new Date().toISOString();
-      const from = order?.status ?? null;
-      const { error } = await supabase
-        .from("deboning_orders")
-        .update({ status: "em_andamento", started_at: now })
-        .eq("id", id);
-      if (error) throw error;
-      await logOrderHistory({
-        orderId: id,
-        action: "desossa_iniciada",
-        fromStatus: from,
-        toStatus: "em_andamento",
-      });
-      await notifyAdmins({
-        type: "desossa_iniciada",
-        title: "Desossa iniciada",
-        body: `${(order as any)?.pecas_entrada?.name ?? "Ordem"} iniciada`,
-        orderId: id,
-      });
-    },
+    mutationFn: async () => startOrder({ data: { order_id: id } }),
     onSuccess: () => {
       toast.success("Desossa iniciada");
       qc.invalidateQueries({ queryKey: ["order", id] });
       qc.invalidateQueries({ queryKey: ["my-orders"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
@@ -200,91 +185,47 @@ function MobileDesossa() {
     setPieceForm({ corte_id: "", peso: 0, quantidade: 1, observacoes: "" });
     setPieceDialogOpen(false);
     toast.success(`${corte?.name ?? "Corte"} adicionado`);
-    logOrderHistory({
-      orderId: id,
-      action: "corte_adicionado",
-      notes: `${corte?.name ?? "Corte"} — ${formatKg(pieceForm.peso, 2)} kg (x${pieceForm.quantidade})`,
-    }).catch(() => null);
   }
 
   function removePiece(temp_id: string) {
-    const p = pieces.find((x) => x.temp_id === temp_id);
     setPieces((arr) => arr.filter((x) => x.temp_id !== temp_id));
-    if (p) {
-      const corte = cortes.find((c: any) => c.id === p.corte_id);
-      logOrderHistory({
-        orderId: id,
-        action: "corte_removido",
-        notes: `${corte?.name ?? "Corte"} — ${formatKg(p.peso, 2)} kg`,
-      }).catch(() => null);
-    }
   }
 
   const finishMut = useMutation({
     mutationFn: async ({ force }: { force: boolean }) => {
       if (pieces.length === 0) throw new Error("Adicione ao menos um corte");
-      const now = new Date().toISOString();
+      // Guarantee em_andamento (server fn will noop if already)
       if (order?.status !== "em_andamento") {
-        await supabase
-          .from("deboning_orders")
-          .update({ status: "em_andamento", started_at: now })
-          .eq("id", id);
+        await startOrder({ data: { order_id: id } });
       }
-
-      const piecesPayload = pieces.map((p) => ({
-        order_id: id,
-        corte_id: p.corte_id ?? null,
-        peso: p.peso,
-        quantidade: p.quantidade || 1,
-        observacoes: p.observacoes ?? null,
-      }));
-      const { error: pErr } = await supabase.from("deboning_pieces").insert(piecesPayload);
-      if (pErr) throw pErr;
-
-      const { error: lErr } = await supabase.from("deboning_losses").upsert(
-        {
+      // Persist each piece via server fn (each entry logs history)
+      for (const p of pieces) {
+        if (!p.corte_id) continue;
+        await addPieceRpc({
+          data: {
+            order_id: id,
+            corte_id: p.corte_id,
+            peso: Number(p.peso),
+            quantidade: Number(p.quantidade || 1),
+            observacoes: p.observacoes ?? null,
+          },
+        });
+      }
+      // Persist losses
+      await updateLossesRpc({
+        data: {
           order_id: id,
-          ossos: losses.ossos,
-          gordura: losses.gordura,
-          retalhos: losses.retalhos,
-          descarte: losses.descarte,
-          outros: losses.outros,
+          ossos: Number(losses.ossos || 0),
+          gordura: Number(losses.gordura || 0),
+          retalhos: Number(losses.retalhos || 0),
+          descarte: Number(losses.descarte || 0),
+          outros: Number(losses.outros || 0),
           observacoes: lossObs || null,
         },
-        { onConflict: "order_id" },
-      );
-      if (lErr) throw lErr;
-
-      const finalizadaComDivergencia = force && excedeu;
-      const { error: oErr } = await supabase
-        .from("deboning_orders")
-        .update({
-          status: "finalizada",
-          finished_at: now,
-          peso_aproveitado: rec.aproveitado,
-          rendimento_pct: rec.rendimento,
-          divergencia_kg: rec.diferencaAbs,
-          divergencia_pct: rec.divergenciaPct,
-          finalizada_com_divergencia: finalizadaComDivergencia,
-          observacoes_finalizacao: obs || null,
-        })
-        .eq("id", id);
-      if (oErr) throw oErr;
-
-      await logOrderHistory({
-        orderId: id,
-        action: finalizadaComDivergencia ? "ordem_finalizada_divergencia" : "ordem_finalizada",
-        fromStatus: "em_andamento",
-        toStatus: "finalizada",
-        notes: finalizadaComDivergencia
-          ? `Divergência de ${formatKg(rec.diferencaAbs, 3)} kg (${formatPercent(rec.divergenciaPct)}%). Rendimento ${formatPercent(rec.rendimento)}%.`
-          : `Rendimento ${formatPercent(rec.rendimento)}%. Diferença ${formatKg(rec.diferencaAbs, 3)} kg.`,
       });
-      await notifyAdmins({
-        type: finalizadaComDivergencia ? "divergencia" : "desossa_finalizada",
-        title: finalizadaComDivergencia ? "Desossa finalizada com divergência" : "Desossa finalizada",
-        body: `Rendimento ${formatPercent(rec.rendimento)}% · ${formatKg(rec.aproveitado, 2)} kg aprov.`,
-        orderId: id,
+      // Finalize (server validates divergence)
+      return finalizeOrder({
+        data: { order_id: id, force, observacoes: obs || null },
       });
     },
     onSuccess: () => {
@@ -293,6 +234,7 @@ function MobileDesossa() {
       qc.invalidateQueries({ queryKey: ["my-orders"] });
       qc.invalidateQueries({ queryKey: ["orders-list"] });
       qc.invalidateQueries({ queryKey: ["dashboard-orders"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
       navigate({ to: "/mobile", replace: true });
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
