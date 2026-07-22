@@ -358,10 +358,11 @@ function OrdemDetalhe() {
   const excedeu = rec.diferencaAbs > tolerance.divergenciaMaximaKg;
 
   function openEdit() {
+    const o = order as any;
     setEditForm({
-      assigned_employee_id: (order as any).assigned_employee_id ?? "",
-      valor_compra: order.valor_compra != null ? String(order.valor_compra) : "",
-      observacoes: order.observacoes ?? "",
+      assigned_employee_id: o?.assigned_employee_id ?? "",
+      valor_compra: o?.valor_compra != null ? String(o.valor_compra) : "",
+      observacoes: o?.observacoes ?? "",
     });
     setEditOpen(true);
   }
