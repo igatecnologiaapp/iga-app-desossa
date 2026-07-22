@@ -463,3 +463,123 @@ export const cancelOrder = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+// ------------------------------------------------------------
+// reopenOrder — admin/supervisor. Volta finalizada → em_andamento,
+// preserva histórico, mantém o mesmo açougueiro atribuído.
+// ------------------------------------------------------------
+export const reopenOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { order_id: string; reason: string }) => {
+    if (!data.order_id) throw new Error("Ordem inválida.");
+    if (!data.reason || data.reason.trim().length < 3)
+      throw new Error("Informe o motivo da reabertura (mín. 3 caracteres).");
+    return data;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const roles = await fetchRoles(supabase, userId);
+    ensureRole(roles, ["admin", "supervisor"]);
+
+    const order = await fetchOrderStrict(supabase, data.order_id);
+    if (order.status !== "finalizada") {
+      throw new Error("Somente ordens finalizadas podem ser reabertas.");
+    }
+
+    const now = new Date().toISOString();
+    const { data: cur } = await supabase
+      .from("deboning_orders")
+      .select("reopen_count")
+      .eq("id", data.order_id)
+      .maybeSingle();
+    const nextCount = Number((cur as any)?.reopen_count ?? 0) + 1;
+
+    const { error } = await supabase
+      .from("deboning_orders")
+      .update({
+        status: "em_andamento",
+        finished_at: null,
+        reopened_at: now,
+        reopened_by: userId,
+        reopen_reason: data.reason,
+        reopen_count: nextCount,
+      })
+      .eq("id", data.order_id);
+    if (error) throw new Error(error.message);
+
+    await logHistory(supabase, userId, {
+      orderId: data.order_id,
+      action: "ordem_reaberta",
+      fromStatus: "finalizada",
+      toStatus: "em_andamento",
+      notes: `Reabertura #${nextCount}. Motivo: ${data.reason}`,
+    });
+    if (order.assigned_employee_id) {
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("user_id")
+        .eq("id", order.assigned_employee_id)
+        .maybeSingle();
+      if (emp?.user_id) {
+        await notifyUser(supabase, {
+          userId: emp.user_id,
+          type: "ordem_reaberta",
+          title: "Ordem reaberta",
+          body: `${order.order_code ?? ""} · ${data.reason}`,
+          orderId: data.order_id,
+        });
+      }
+    }
+    await notifyAdmins(supabase, {
+      type: "ordem_reaberta",
+      title: "Ordem reaberta",
+      body: `${order.order_code ?? ""} · ${data.reason}`,
+      orderId: data.order_id,
+    });
+    return { ok: true };
+  });
+
+// ------------------------------------------------------------
+// deleteOrder — exclusão lógica (soft delete). Somente admin.
+// Preserva histórico para auditoria.
+// ------------------------------------------------------------
+export const deleteOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { order_id: string; reason: string }) => {
+    if (!data.order_id) throw new Error("Ordem inválida.");
+    if (!data.reason || data.reason.trim().length < 3)
+      throw new Error("Informe o motivo da exclusão (mín. 3 caracteres).");
+    return data;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const roles = await fetchRoles(supabase, userId);
+    ensureRole(roles, ["admin"]);
+
+    const order = await fetchOrderStrict(supabase, data.order_id);
+
+    const { error } = await supabase
+      .from("deboning_orders")
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: userId,
+        deletion_reason: data.reason,
+      })
+      .eq("id", data.order_id);
+    if (error) throw new Error(error.message);
+
+    await logHistory(supabase, userId, {
+      orderId: data.order_id,
+      action: "ordem_excluida",
+      fromStatus: order.status,
+      toStatus: order.status,
+      notes: `Exclusão lógica. Motivo: ${data.reason}`,
+    });
+    await notifyAdmins(supabase, {
+      type: "ordem_excluida",
+      title: "Ordem excluída",
+      body: `${order.order_code ?? ""} · ${data.reason}`,
+      orderId: data.order_id,
+    });
+    return { ok: true };
+  });
