@@ -393,20 +393,48 @@ function Ordens() {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">
-                <Label>Fornecedor *</Label>
-                <Select value={form.supplier_id} onValueChange={(v) => setForm((f) => ({ ...f, supplier_id: v }))}>
+                <Label>Entrada de Mercadoria *</Label>
+                <Select
+                  value={form.stock_entry_id}
+                  onValueChange={(v) => {
+                    const entry: any = stockEntries.find((e: any) => e.id === v);
+                    setForm((f) => ({
+                      ...f,
+                      stock_entry_id: v,
+                      supplier_id: entry?.supplier_id ?? "",
+                      peso_inicial: entry?.peso_bruto ? Number(entry.peso_bruto) : f.peso_inicial,
+                      valor_compra:
+                        entry?.purchase_value != null ? String(entry.purchase_value) : f.valor_compra,
+                    }));
+                  }}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder="Selecione a entrada que originou esta ordem" />
                   </SelectTrigger>
                   <SelectContent>
-                    {suppliers.map((s: any) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.razao_social}
-                      </SelectItem>
-                    ))}
+                    {stockEntries.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        Nenhuma entrada cadastrada. Registre em Entradas antes.
+                      </div>
+                    ) : (
+                      stockEntries.map((e: any) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {formatDate(e.entry_date)} · {e.suppliers?.razao_social ?? "—"} ·{" "}
+                          {formatKg(e.peso_bruto, 2)} kg
+                          {e.lote ? ` · Lote ${e.lote}` : ""}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                {form.supplier_id ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Fornecedor:{" "}
+                    {suppliers.find((s: any) => s.id === form.supplier_id)?.razao_social ?? "—"}
+                  </p>
+                ) : null}
               </div>
+
               <div className="space-y-2 md:col-span-2">
                 <Label>Peça de Entrada *</Label>
                 <Select
