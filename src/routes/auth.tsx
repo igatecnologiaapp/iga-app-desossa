@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff, LogIn, KeyRound } from "lucide-react";
+import { fetchUserRoles, homeForRoles } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -29,13 +30,8 @@ function AuthPage() {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.user.id);
-        const list = (roles ?? []).map((r) => r.role as string);
-        const target = list.includes("acougueiro") && !list.includes("admin") ? "/mobile" : "/dashboard";
-        navigate({ to: target, replace: true });
+        const roles = await fetchUserRoles(data.user.id);
+        navigate({ to: homeForRoles(roles), replace: true });
       }
     });
   }, [navigate]);
@@ -51,14 +47,9 @@ function AuthPage() {
     }
     const { data: userRes } = await supabase.auth.getUser();
     if (userRes.user) {
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userRes.user.id);
-      const list = (roles ?? []).map((r) => r.role as string);
-      const target = list.includes("acougueiro") && !list.includes("admin") ? "/mobile" : "/dashboard";
+      const roles = await fetchUserRoles(userRes.user.id);
       toast.success("Bem-vindo!");
-      navigate({ to: target, replace: true });
+      navigate({ to: homeForRoles(roles), replace: true });
     }
   }
 

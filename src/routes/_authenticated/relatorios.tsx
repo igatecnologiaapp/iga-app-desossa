@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { assertAnyRole } from "@/lib/route-guards";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
@@ -16,6 +17,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({ meta: [{ title: "Relatórios — CarnePro" }] }),
+  beforeLoad: ({ context }) => assertAnyRole((context as any).roles ?? [], ["admin", "supervisor", "visualizacao"]),
   component: Relatorios,
 });
 
