@@ -157,15 +157,24 @@ function Ordens() {
 
   const createMut = useMutation({
     mutationFn: async () => {
+      if (!form.stock_entry_id) throw new Error("Selecione a Entrada de Mercadoria.");
       if (!form.peca_entrada_id) throw new Error("Selecione a peça de entrada.");
-      if (!form.supplier_id) throw new Error("Selecione o fornecedor.");
+      if (!form.supplier_id) throw new Error("Fornecedor não identificado na entrada.");
       if (form.peso_inicial <= 0) throw new Error("Informe o peso inicial.");
       const { data: userRes } = await supabase.auth.getUser();
-      const code = `#OD-${Math.floor(Math.random() * 900 + 100)}`;
+
+      // Server-generated sequential code (OD-000001)
+      const { data: codeRes, error: codeErr } = await supabase.rpc("next_order_code", {
+        _tenant: "00000000-0000-0000-0000-000000000001",
+      });
+      if (codeErr) throw codeErr;
+      const code = (codeRes as unknown as string) ?? `OD-${Date.now()}`;
+
       const status = form.assigned_employee_id ? "atribuida" : "pendente";
       const { data: inserted, error } = await supabase
         .from("deboning_orders")
         .insert({
+          stock_entry_id: form.stock_entry_id,
           peca_entrada_id: form.peca_entrada_id,
           supplier_id: form.supplier_id,
           peso_inicial: Number(form.peso_inicial),
@@ -180,6 +189,7 @@ function Ordens() {
         .select("id")
         .single();
       if (error) throw error;
+
 
       const orderId = inserted.id;
       await logOrderHistory({ orderId, action: "ordem_criada", toStatus: status });
