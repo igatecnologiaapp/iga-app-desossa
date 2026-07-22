@@ -67,6 +67,7 @@ export type Database = {
           descarte: number
           gordura: number
           id: string
+          is_demo: boolean
           observacoes: string | null
           order_id: string
           ossos: number
@@ -78,6 +79,7 @@ export type Database = {
           descarte?: number
           gordura?: number
           id?: string
+          is_demo?: boolean
           observacoes?: string | null
           order_id: string
           ossos?: number
@@ -89,6 +91,7 @@ export type Database = {
           descarte?: number
           gordura?: number
           id?: string
+          is_demo?: boolean
           observacoes?: string | null
           order_id?: string
           ossos?: number
@@ -110,10 +113,14 @@ export type Database = {
         Row: {
           action: string
           created_at: string
+          field: string | null
           from_status: string | null
           id: string
+          is_demo: boolean
           metadata: Json | null
+          new_value: string | null
           notes: string | null
+          old_value: string | null
           order_id: string
           tenant_id: string
           to_status: string | null
@@ -123,10 +130,14 @@ export type Database = {
         Insert: {
           action: string
           created_at?: string
+          field?: string | null
           from_status?: string | null
           id?: string
+          is_demo?: boolean
           metadata?: Json | null
+          new_value?: string | null
           notes?: string | null
+          old_value?: string | null
           order_id: string
           tenant_id?: string
           to_status?: string | null
@@ -136,10 +147,14 @@ export type Database = {
         Update: {
           action?: string
           created_at?: string
+          field?: string | null
           from_status?: string | null
           id?: string
+          is_demo?: boolean
           metadata?: Json | null
+          new_value?: string | null
           notes?: string | null
+          old_value?: string | null
           order_id?: string
           tenant_id?: string
           to_status?: string | null
@@ -174,6 +189,7 @@ export type Database = {
           finalizada_com_divergencia: boolean
           finished_at: string | null
           id: string
+          is_demo: boolean
           margem_pct: number | null
           observacoes: string | null
           observacoes_finalizacao: string | null
@@ -186,6 +202,7 @@ export type Database = {
           rendimento_pct: number | null
           started_at: string | null
           status: Database["public"]["Enums"]["order_status"]
+          stock_entry_id: string | null
           supplier_id: string | null
           tenant_id: string
           valor_compra: number | null
@@ -200,6 +217,7 @@ export type Database = {
           finalizada_com_divergencia?: boolean
           finished_at?: string | null
           id?: string
+          is_demo?: boolean
           margem_pct?: number | null
           observacoes?: string | null
           observacoes_finalizacao?: string | null
@@ -212,6 +230,7 @@ export type Database = {
           rendimento_pct?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          stock_entry_id?: string | null
           supplier_id?: string | null
           tenant_id?: string
           valor_compra?: number | null
@@ -226,6 +245,7 @@ export type Database = {
           finalizada_com_divergencia?: boolean
           finished_at?: string | null
           id?: string
+          is_demo?: boolean
           margem_pct?: number | null
           observacoes?: string | null
           observacoes_finalizacao?: string | null
@@ -238,6 +258,7 @@ export type Database = {
           rendimento_pct?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          stock_entry_id?: string | null
           supplier_id?: string | null
           tenant_id?: string
           valor_compra?: number | null
@@ -265,6 +286,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "deboning_orders_stock_entry_id_fkey"
+            columns: ["stock_entry_id"]
+            isOneToOne: false
+            referencedRelation: "stock_entries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "deboning_orders_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -285,6 +313,7 @@ export type Database = {
           corte_id: string | null
           created_at: string
           id: string
+          is_demo: boolean
           observacoes: string | null
           order_id: string
           peso: number
@@ -295,6 +324,7 @@ export type Database = {
           corte_id?: string | null
           created_at?: string
           id?: string
+          is_demo?: boolean
           observacoes?: string | null
           order_id: string
           peso: number
@@ -305,6 +335,7 @@ export type Database = {
           corte_id?: string | null
           created_at?: string
           id?: string
+          is_demo?: boolean
           observacoes?: string | null
           order_id?: string
           peso?: number
@@ -343,6 +374,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          is_demo: boolean
           status: string
           tenant_id: string
           user_id: string | null
@@ -354,6 +386,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          is_demo?: boolean
           status?: string
           tenant_id?: string
           user_id?: string | null
@@ -365,6 +398,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          is_demo?: boolean
           status?: string
           tenant_id?: string
           user_id?: string | null
@@ -384,6 +418,7 @@ export type Database = {
           body: string | null
           created_at: string
           id: string
+          is_demo: boolean
           order_id: string | null
           read_at: string | null
           tenant_id: string
@@ -395,6 +430,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           id?: string
+          is_demo?: boolean
           order_id?: string | null
           read_at?: string | null
           tenant_id?: string
@@ -406,6 +442,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           id?: string
+          is_demo?: boolean
           order_id?: string | null
           read_at?: string | null
           tenant_id?: string
@@ -425,6 +462,32 @@ export type Database = {
             foreignKeyName: "notifications_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_code_counters: {
+        Row: {
+          last_value: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          last_value?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          last_value?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_code_counters_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -660,6 +723,7 @@ export type Database = {
           entry_date: string
           id: string
           invoice_number: string | null
+          is_demo: boolean
           lote: string | null
           observacoes: string | null
           peso_bruto: number
@@ -673,6 +737,7 @@ export type Database = {
           entry_date?: string
           id?: string
           invoice_number?: string | null
+          is_demo?: boolean
           lote?: string | null
           observacoes?: string | null
           peso_bruto: number
@@ -686,6 +751,7 @@ export type Database = {
           entry_date?: string
           id?: string
           invoice_number?: string | null
+          is_demo?: boolean
           lote?: string | null
           observacoes?: string | null
           peso_bruto?: number
@@ -725,6 +791,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_demo: boolean
           nome_fantasia: string | null
           observacoes: string | null
           razao_social: string
@@ -737,6 +804,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_demo?: boolean
           nome_fantasia?: string | null
           observacoes?: string | null
           razao_social: string
@@ -749,6 +817,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_demo?: boolean
           nome_fantasia?: string | null
           observacoes?: string | null
           razao_social?: string
@@ -863,6 +932,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      next_order_code: { Args: { _tenant: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "acougueiro" | "supervisor" | "visualizacao"

@@ -72,6 +72,7 @@ function Ordens() {
   const [cancelReason, setCancelReason] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [form, setForm] = useState({
+    stock_entry_id: "",
     peca_entrada_id: "",
     category_id: "",
     supplier_id: "",
@@ -81,6 +82,7 @@ function Ordens() {
     valor_compra: "",
     observacoes: "",
   });
+
 
   const { data: orders = [] } = useQuery({
     queryKey: ["orders-list"],
@@ -133,19 +135,46 @@ function Ordens() {
     },
   });
 
+  const { data: stockEntries = [] } = useQuery({
+    queryKey: ["stock-entries-min"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("stock_entries")
+        .select(
+          `id, entry_date, peso_bruto, purchase_value, lote, invoice_number,
+           supplier_id, product_id,
+           suppliers:supplier_id(razao_social),
+           products:product_id(name)`,
+        )
+        .order("entry_date", { ascending: false })
+        .limit(200);
+      return data ?? [];
+    },
+  });
+
+
   const selectedPeca: any = pecas.find((p: any) => p.id === form.peca_entrada_id);
 
   const createMut = useMutation({
     mutationFn: async () => {
+      if (!form.stock_entry_id) throw new Error("Selecione a Entrada de Mercadoria.");
       if (!form.peca_entrada_id) throw new Error("Selecione a peça de entrada.");
-      if (!form.supplier_id) throw new Error("Selecione o fornecedor.");
+      if (!form.supplier_id) throw new Error("Fornecedor não identificado na entrada.");
       if (form.peso_inicial <= 0) throw new Error("Informe o peso inicial.");
       const { data: userRes } = await supabase.auth.getUser();
-      const code = `#OD-${Math.floor(Math.random() * 900 + 100)}`;
+
+      // Server-generated sequential code (OD-000001)
+      const { data: codeRes, error: codeErr } = await supabase.rpc("next_order_code", {
+        _tenant: "00000000-0000-0000-0000-000000000001",
+      });
+      if (codeErr) throw codeErr;
+      const code = (codeRes as unknown as string) ?? `OD-${Date.now()}`;
+
       const status = form.assigned_employee_id ? "atribuida" : "pendente";
       const { data: inserted, error } = await supabase
         .from("deboning_orders")
         .insert({
+          stock_entry_id: form.stock_entry_id,
           peca_entrada_id: form.peca_entrada_id,
           supplier_id: form.supplier_id,
           peso_inicial: Number(form.peso_inicial),
@@ -160,6 +189,7 @@ function Ordens() {
         .select("id")
         .single();
       if (error) throw error;
+
 
       const orderId = inserted.id;
       await logOrderHistory({ orderId, action: "ordem_criada", toStatus: status });
@@ -196,6 +226,7 @@ function Ordens() {
       qc.invalidateQueries({ queryKey: ["my-orders"] });
       setOpen(false);
       setForm({
+        stock_entry_id: "",
         peca_entrada_id: "",
         category_id: "",
         supplier_id: "",
@@ -205,6 +236,7 @@ function Ordens() {
         valor_compra: "",
         observacoes: "",
       });
+
       toast.success("Ordem criada com sucesso");
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
@@ -361,20 +393,48 @@ function Ordens() {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">
-                <Label>Fornecedor *</Label>
-                <Select value={form.supplier_id} onValueChange={(v) => setForm((f) => ({ ...f, supplier_id: v }))}>
+                <Label>Entrada de Mercadoria *</Label>
+                <Select
+                  value={form.stock_entry_id}
+                  onValueChange={(v) => {
+                    const entry: any = stockEntries.find((e: any) => e.id === v);
+                    setForm((f) => ({
+                      ...f,
+                      stock_entry_id: v,
+                      supplier_id: entry?.supplier_id ?? "",
+                      peso_inicial: entry?.peso_bruto ? Number(entry.peso_bruto) : f.peso_inicial,
+                      valor_compra:
+                        entry?.purchase_value != null ? String(entry.purchase_value) : f.valor_compra,
+                    }));
+                  }}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder="Selecione a entrada que originou esta ordem" />
                   </SelectTrigger>
                   <SelectContent>
-                    {suppliers.map((s: any) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.razao_social}
-                      </SelectItem>
-                    ))}
+                    {stockEntries.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        Nenhuma entrada cadastrada. Registre em Entradas antes.
+                      </div>
+                    ) : (
+                      stockEntries.map((e: any) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {formatDate(e.entry_date)} · {e.suppliers?.razao_social ?? "—"} ·{" "}
+                          {formatKg(e.peso_bruto, 2)} kg
+                          {e.lote ? ` · Lote ${e.lote}` : ""}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                {form.supplier_id ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Fornecedor:{" "}
+                    {suppliers.find((s: any) => s.id === form.supplier_id)?.razao_social ?? "—"}
+                  </p>
+                ) : null}
               </div>
+
               <div className="space-y-2 md:col-span-2">
                 <Label>Peça de Entrada *</Label>
                 <Select
