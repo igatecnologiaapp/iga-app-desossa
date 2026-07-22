@@ -90,7 +90,7 @@ export function AppSidebar() {
       items: [
         { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: canOps },
         { to: "/ordens", label: "Ordens de Desossa", icon: ClipboardList, show: canOps },
-        { to: "/entradas", label: "Entrada de Produtos", icon: Package, show: perms.isAdmin || perms.isSupervisor },
+        { to: "/entradas", label: "Entrada de Matéria-Prima", icon: Package, show: perms.isAdmin || perms.isSupervisor },
       ],
     },
     {
@@ -99,7 +99,8 @@ export function AppSidebar() {
       items: [
         { to: "/fornecedores", label: "Fornecedores", icon: Truck, show: perms.isAdmin },
         { to: "/funcionarios", label: "Funcionários", icon: UserCog, show: perms.isAdmin },
-        { to: "/produtos", label: "Produtos", icon: Package, show: perms.isAdmin },
+        { to: "/pecas", label: "Peças de Entrada (Matéria-Prima)", icon: Layers, show: perms.isAdmin },
+        { to: "/cortes", label: "Cortes (Produtos Resultantes)", icon: Scissors, show: perms.isAdmin },
         { to: "/pecas", label: "Peças de Entrada", icon: Layers, show: perms.isAdmin },
         { to: "/cortes", label: "Cortes", icon: Scissors, show: perms.isAdmin },
         { to: "/rendimento", label: "Rendimento Esperado", icon: ListTree, show: perms.isAdmin },

@@ -149,9 +149,9 @@ function Ordens() {
         .from("stock_entries")
         .select(
           `id, entry_date, peso_bruto, purchase_value, lote, invoice_number,
-           supplier_id, product_id,
+           supplier_id, peca_entrada_id,
            suppliers:supplier_id(razao_social),
-           products:product_id(name)`,
+           pecas_entrada:peca_entrada_id(name)`,
         )
         .order("entry_date", { ascending: false })
         .limit(200);
@@ -379,6 +379,7 @@ function Ordens() {
                       ...f,
                       stock_entry_id: v,
                       supplier_id: entry?.supplier_id ?? "",
+                      peca_entrada_id: entry?.peca_entrada_id ?? f.peca_entrada_id,
                       peso_inicial: entry?.peso_bruto ? Number(entry.peso_bruto) : f.peso_inicial,
                       valor_compra:
                         entry?.purchase_value != null ? String(entry.purchase_value) : f.valor_compra,
@@ -396,8 +397,8 @@ function Ordens() {
                     ) : (
                       stockEntries.map((e: any) => (
                         <SelectItem key={e.id} value={e.id}>
-                          {formatDate(e.entry_date)} · {e.suppliers?.razao_social ?? "—"} ·{" "}
-                          {formatKg(e.peso_bruto, 2)} kg
+                          {formatDate(e.entry_date)} · {e.pecas_entrada?.name ?? "—"} ·{" "}
+                          {e.suppliers?.razao_social ?? "—"} · {formatKg(e.peso_bruto, 2)} kg
                           {e.lote ? ` · Lote ${e.lote}` : ""}
                         </SelectItem>
                       ))
