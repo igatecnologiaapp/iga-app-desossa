@@ -36,7 +36,7 @@ function Entradas() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<{
     supplier_id: string;
-    product_id: string;
+    peca_entrada_id: string;
     peso_bruto: string;
     entry_date: string;
     invoice_number: string;
@@ -44,7 +44,7 @@ function Entradas() {
     lote: string;
   }>({
     supplier_id: "",
-    product_id: "",
+    peca_entrada_id: "",
     peso_bruto: "",
     entry_date: new Date().toISOString().slice(0, 10),
     invoice_number: "",
@@ -59,10 +59,14 @@ function Entradas() {
       return data ?? [];
     },
   });
-  const { data: products = [] } = useQuery({
-    queryKey: ["products"],
+  const { data: pecas = [] } = useQuery({
+    queryKey: ["pecas-entrada-ativas"],
     queryFn: async () => {
-      const { data } = await supabase.from("products").select("id, name").order("name");
+      const { data } = await supabase
+        .from("pecas_entrada")
+        .select("id, name, code, category_id, product_categories:category_id(name)")
+        .eq("active", true)
+        .order("name");
       return data ?? [];
     },
   });
@@ -73,7 +77,7 @@ function Entradas() {
       const { data, error } = await supabase
         .from("stock_entries")
         .select(
-          "id, peso_bruto, entry_date, invoice_number, purchase_value, lote, suppliers:supplier_id(razao_social), products:product_id(name)",
+          "id, peso_bruto, entry_date, invoice_number, purchase_value, lote, suppliers:supplier_id(razao_social), pecas_entrada:peca_entrada_id(name)",
         )
         .order("entry_date", { ascending: false })
         .limit(100);
@@ -84,12 +88,12 @@ function Entradas() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!form.product_id || !form.supplier_id || !form.peso_bruto) {
-        throw new Error("Preencha produto, fornecedor e peso bruto.");
+      if (!form.peca_entrada_id || !form.supplier_id || !form.peso_bruto) {
+        throw new Error("Preencha fornecedor, matéria-prima e peso bruto.");
       }
       const { error } = await supabase.from("stock_entries").insert({
         supplier_id: form.supplier_id,
-        product_id: form.product_id,
+        peca_entrada_id: form.peca_entrada_id,
         peso_bruto: Number(form.peso_bruto),
         entry_date: form.entry_date,
         invoice_number: form.invoice_number || null,
@@ -100,6 +104,7 @@ function Entradas() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stock-entries"] });
+      qc.invalidateQueries({ queryKey: ["stock-entries-min"] });
       setOpen(false);
       toast.success("Entrada registrada");
     },
@@ -116,8 +121,8 @@ function Entradas() {
 
   return (
     <AppShell
-      title="Entrada de Produtos"
-      subtitle="Registro de recebimento (peso bruto) por fornecedor"
+      title="Entrada de Matéria-Prima"
+      subtitle="Recebimento de peças (matéria-prima) por fornecedor — origem do processo de desossa"
       actions={
         <Button onClick={() => setOpen(true)} size="sm">
           <Plus className="size-4 mr-1" /> Nova Entrada
@@ -129,7 +134,7 @@ function Entradas() {
           <thead>
             <tr className="bg-secondary/50 border-b">
               <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Data</th>
-              <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Produto</th>
+              <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Matéria-Prima</th>
               <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Fornecedor</th>
               <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Lote / Nota</th>
               <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Peso Bruto</th>
@@ -148,7 +153,7 @@ function Entradas() {
               entries.map((e: any) => (
                 <tr key={e.id} className="border-b hover:bg-secondary/40">
                   <td className="px-6 py-3">{formatDate(e.entry_date)}</td>
-                  <td className="px-6 py-3 font-semibold">{e.products?.name ?? "—"}</td>
+                  <td className="px-6 py-3 font-semibold">{e.pecas_entrada?.name ?? "—"}</td>
                   <td className="px-6 py-3 text-muted-foreground">{e.suppliers?.razao_social ?? "—"}</td>
                   <td className="px-6 py-3">
                     <div className="text-xs">
@@ -173,7 +178,7 @@ function Entradas() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Nova Entrada</DialogTitle>
+            <DialogTitle>Nova Entrada de Matéria-Prima</DialogTitle>
           </DialogHeader>
           <form
             className="space-y-4"
@@ -193,13 +198,27 @@ function Entradas() {
                 </Select>
               </div>
               <div className="space-y-2 col-span-2">
-                <Label>Produto *</Label>
-                <Select value={form.product_id} onValueChange={(v) => setForm((f) => ({ ...f, product_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Label>Matéria-Prima (Peça de Entrada) *</Label>
+                <Select value={form.peca_entrada_id} onValueChange={(v) => setForm((f) => ({ ...f, peca_entrada_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a peça recebida" /></SelectTrigger>
                   <SelectContent>
-                    {products.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    {pecas.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        Nenhuma peça cadastrada. Cadastre em Cadastros → Peças de Entrada.
+                      </div>
+                    ) : (
+                      pecas.map((p: any) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                          {p.product_categories?.name ? ` · ${p.product_categories.name}` : ""}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Apenas matérias-primas (peças que serão desossadas) aparecem aqui. Cortes resultantes são lançados durante a desossa.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Peso Bruto (kg) *</Label>
@@ -232,3 +251,4 @@ function Entradas() {
     </AppShell>
   );
 }
+
