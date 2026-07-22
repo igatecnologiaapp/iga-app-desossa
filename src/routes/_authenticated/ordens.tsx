@@ -198,6 +198,7 @@ function Ordens() {
       qc.invalidateQueries({ queryKey: ["my-orders"] });
       setOpen(false);
       setForm({
+        stock_entry_id: "",
         peca_entrada_id: "",
         category_id: "",
         supplier_id: "",
@@ -207,6 +208,7 @@ function Ordens() {
         valor_compra: "",
         observacoes: "",
       });
+
       toast.success("Ordem criada com sucesso");
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
