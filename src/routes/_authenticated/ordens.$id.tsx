@@ -156,12 +156,24 @@ function OrdemDetalhe() {
       title={order.order_code ?? "Ordem"}
       subtitle={(order as any).pecas_entrada?.name ?? (order as any).products?.name ?? ""}
       actions={
-        <Link
-          to="/ordens"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Voltar
-        </Link>
+        <div className="flex items-center gap-2">
+          {perms.canReopenOrders && order.status === "finalizada" ? (
+            <Button size="sm" variant="outline" onClick={() => setReopenOpen(true)}>
+              <RotateCcw className="size-4 mr-1" /> Reabrir
+            </Button>
+          ) : null}
+          {perms.canDeleteOrders ? (
+            <Button size="sm" variant="outline" onClick={() => setDeleteOpen(true)} className="text-destructive hover:text-destructive">
+              <Trash2 className="size-4 mr-1" /> Excluir
+            </Button>
+          ) : null}
+          <Link
+            to="/ordens"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" /> Voltar
+          </Link>
+        </div>
       }
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
