@@ -345,6 +345,65 @@ function OrdemDetalhe() {
           </div>
         </div>
       </div>
+
+      <Dialog open={reopenOpen} onOpenChange={setReopenOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reabrir ordem</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivo da reabertura *</Label>
+            <Textarea
+              value={reopenReason}
+              onChange={(e) => setReopenReason(e.target.value)}
+              rows={3}
+              placeholder="Descreva por que esta ordem precisa ser reaberta"
+            />
+            <p className="text-xs text-muted-foreground">
+              A ordem retornará para <b>em andamento</b> mantendo o mesmo açougueiro. O histórico é preservado.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReopenOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => reopenMut.mutate()}
+              disabled={reopenReason.trim().length < 3 || reopenMut.isPending}
+            >
+              Reabrir ordem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir ordem</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivo da exclusão *</Label>
+            <Textarea
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              rows={3}
+              placeholder="Descreva por que esta ordem deve ser excluída"
+            />
+            <p className="text-xs text-destructive">
+              A exclusão é lógica: a ordem deixa de aparecer nas listas, mas o histórico permanece para auditoria.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteMut.mutate()}
+              disabled={deleteReason.trim().length < 3 || deleteMut.isPending}
+            >
+              Excluir ordem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
