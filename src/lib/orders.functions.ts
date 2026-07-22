@@ -620,7 +620,11 @@ export const updateOrderMetadata = createServerFn({ method: "POST" })
       .eq("id", data.order_id)
       .maybeSingle();
 
-    const updates: Record<string, unknown> = {};
+    const updates: {
+      assigned_employee_id?: string | null;
+      valor_compra?: number | null;
+      observacoes?: string | null;
+    } = {};
     const changes: Array<{ field: string; oldValue: string; newValue: string; notes: string }> = [];
 
     if (data.assigned_employee_id !== undefined) {
