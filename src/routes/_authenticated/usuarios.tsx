@@ -151,6 +151,9 @@ function UsuariosPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users-list"] });
+      // Se o admin editou a si mesmo (papel/status), refaz o contexto do usuário logado
+      // para atualizar menu, permissões e guards imediatamente.
+      qc.invalidateQueries({ queryKey: ["user-context"] });
       setOpen(false);
       resetForm();
       toast.success("Usuário atualizado");
