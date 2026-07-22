@@ -379,6 +379,7 @@ function Ordens() {
                       ...f,
                       stock_entry_id: v,
                       supplier_id: entry?.supplier_id ?? "",
+                      peca_entrada_id: entry?.peca_entrada_id ?? f.peca_entrada_id,
                       peso_inicial: entry?.peso_bruto ? Number(entry.peso_bruto) : f.peso_inicial,
                       valor_compra:
                         entry?.purchase_value != null ? String(entry.purchase_value) : f.valor_compra,
