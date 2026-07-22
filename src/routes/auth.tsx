@@ -82,7 +82,7 @@ function AuthPage() {
         <div className="relative">
           <div className="flex items-center gap-3">
             <div className="size-11 bg-white/15 backdrop-blur rounded-md flex items-center justify-center font-bold text-xl border border-white/20">
-              C
+              P
             </div>
             <div>
               <div className="font-bold tracking-tight text-2xl leading-none">PRO MEAT</div>
