@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff, LogIn, KeyRound } from "lucide-react";
+import { fetchUserRoles, homeForRoles } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
