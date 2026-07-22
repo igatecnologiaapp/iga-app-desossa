@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { assertAnyRole } from "@/lib/route-guards";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -35,8 +36,13 @@ import { WeightInput } from "@/components/weight-input";
 import { ReconciliationPanel } from "@/components/reconciliation-panel";
 import { ArrowLeft, Plus, Trash2, CheckCircle2, Play, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { logOrderHistory, notify, notifyAdmins } from "@/lib/order-history";
 import { useTenantSettings } from "@/hooks/use-auth";
+import {
+  startOrder as startOrderFn,
+  addPiece as addPieceFn,
+  updateLosses as updateLossesFn,
+  finalizeOrder as finalizeOrderFn,
+} from "@/lib/orders.functions";
 
 export const Route = createFileRoute("/_authenticated/mobile/desossa/$id")({
   head: () => ({
