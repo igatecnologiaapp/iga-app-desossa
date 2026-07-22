@@ -218,7 +218,7 @@ function Ordens() {
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 
-  const search = useRouterState({ select: (s) => s.location.search }) as Record<string, string | undefined>;
+  const search = useRouterState({ select: (s) => s.location.search }) as unknown as Record<string, string | undefined>;
   const drillSupplier = search?.supplier_id;
   const drillEmployee = search?.employee_id;
   const drillPeca = search?.peca_entrada_id;
