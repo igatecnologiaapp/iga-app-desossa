@@ -23,7 +23,7 @@ import { Loader2 } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
     meta: [
-      { title: "Configurações — CarnePro" },
+      { title: "Configurações — PRO MEAT" },
       { name: "description", content: "Parâmetros operacionais do sistema." },
     ],
   }),

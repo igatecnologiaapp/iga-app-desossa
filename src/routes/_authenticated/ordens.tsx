@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouterState } from "@tanstack/react-router";
 import { assertAnyRole } from "@/lib/route-guards";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +33,7 @@ import { createOrder as createOrderFn, cancelOrder as cancelOrderFn } from "@/li
 export const Route = createFileRoute("/_authenticated/ordens")({
   head: () => ({
     meta: [
-      { title: "Ordens de Desossa — CarnePro" },
+      { title: "Ordens de Desossa — PRO MEAT" },
       { name: "description", content: "Gestão do ciclo completo das ordens de desossa." },
     ],
   }),
@@ -92,14 +92,20 @@ function Ordens() {
         .from("deboning_orders")
         .select(
           `id, order_code, peso_inicial, status, order_date, created_at, finalizada_com_divergencia,
+           supplier_id, assigned_employee_id, peca_entrada_id,
            products:product_id(name),
            pecas_entrada:peca_entrada_id(name),
            suppliers:supplier_id(razao_social, nome_fantasia),
            employees:assigned_employee_id(id, full_name, user_id)`,
         )
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as unknown as OrderListItem[];
+      return (data ?? []) as unknown as (OrderListItem & {
+        supplier_id: string | null;
+        assigned_employee_id: string | null;
+        peca_entrada_id: string | null;
+      })[];
     },
   });
 
@@ -212,7 +218,32 @@ function Ordens() {
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 
-  const filtered = orders.filter((o) => statusFilter === "all" || o.status === statusFilter);
+  const search = useRouterState({ select: (s) => s.location.search }) as unknown as Record<string, string | undefined>;
+  const drillSupplier = search?.supplier_id;
+  const drillEmployee = search?.employee_id;
+  const drillPeca = search?.peca_entrada_id;
+  const drillFrom = search?.date_from;
+  const drillTo = search?.date_to;
+  const drillDiv = search?.divergencia === "1";
+  const drillStatusParam = search?.status;
+
+  const filtered = useMemo(
+    () =>
+      orders.filter((o: any) => {
+        if (statusFilter !== "all" && o.status !== statusFilter) return false;
+        if (drillStatusParam && o.status !== drillStatusParam) return false;
+        if (drillSupplier && o.supplier_id !== drillSupplier) return false;
+        if (drillEmployee && o.assigned_employee_id !== drillEmployee) return false;
+        if (drillPeca && o.peca_entrada_id !== drillPeca) return false;
+        if (drillFrom && o.order_date < drillFrom) return false;
+        if (drillTo && o.order_date > drillTo) return false;
+        if (drillDiv && !o.finalizada_com_divergencia) return false;
+        return true;
+      }),
+    [orders, statusFilter, drillStatusParam, drillSupplier, drillEmployee, drillPeca, drillFrom, drillTo, drillDiv],
+  );
+
+  const hasDrill = !!(drillSupplier || drillEmployee || drillPeca || drillFrom || drillTo || drillDiv || drillStatusParam);
 
   return (
     <AppShell
@@ -226,6 +257,15 @@ function Ordens() {
         ) : null
       }
     >
+      {hasDrill ? (
+        <div className="flex items-center gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+          <span className="font-semibold text-primary">Filtros do dashboard aplicados</span>
+          <Link to="/ordens" className="ml-auto underline hover:no-underline">
+            Limpar
+          </Link>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         {STATUS_TABS.map((f) => {
           const count = f.k === "all" ? orders.length : orders.filter((o) => o.status === f.k).length;

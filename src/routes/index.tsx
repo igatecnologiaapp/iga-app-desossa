@@ -29,10 +29,10 @@ function Landing() {
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
           <div className="flex items-center gap-3">
             <div className="size-9 bg-primary rounded flex items-center justify-center text-primary-foreground font-bold">
-              C
+              P
             </div>
             <div className="font-bold tracking-tight text-lg">
-              CARNE<span className="text-primary">PRO</span>
+              PRO<span className="text-primary"> MEAT</span>
             </div>
           </div>
           <Link
@@ -121,7 +121,7 @@ function Landing() {
 
       <footer className="border-t bg-panel">
         <div className="max-w-6xl mx-auto px-6 py-6 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} CarnePro · Sistema de Gestão de Desossa
+          © {new Date().getFullYear()} PRO MEAT · Sistema de Gestão de Desossa
         </div>
       </footer>
     </div>

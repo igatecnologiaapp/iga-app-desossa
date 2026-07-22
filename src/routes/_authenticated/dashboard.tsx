@@ -40,7 +40,7 @@ import {
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — CarnePro" },
+      { title: "Dashboard — PRO MEAT" },
       { name: "description", content: "Painel gerencial da desossa: rendimento, ordens, fornecedores e produtividade." },
     ],
   }),
@@ -109,12 +109,12 @@ function Dashboard() {
     >
       {/* KPIs de fluxo */}
       <section className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        <StatusPill label="Pendentes" value={op?.pendentes ?? 0} color="secondary" icon={ClipboardList} />
-        <StatusPill label="Atribuídas" value={op?.atribuidas ?? 0} color="blue" icon={ClipboardCheck} />
-        <StatusPill label="Em Andamento" value={op?.em_andamento ?? 0} color="warning" icon={Clock} />
-        <StatusPill label="Finalizadas" value={op?.finalizadas ?? 0} color="success" icon={ClipboardCheck} />
-        <StatusPill label="Canceladas" value={op?.canceladas ?? 0} color="muted" icon={ClipboardList} />
-        <StatusPill label="Divergências" value={op?.divergencias ?? 0} color="destructive" icon={AlertTriangle} />
+        <StatusPill label="Pendentes" value={op?.pendentes ?? 0} color="secondary" icon={ClipboardList} to="/ordens" search={{ status: "pendente" }} />
+        <StatusPill label="Atribuídas" value={op?.atribuidas ?? 0} color="blue" icon={ClipboardCheck} to="/ordens" search={{ status: "atribuida" }} />
+        <StatusPill label="Em Andamento" value={op?.em_andamento ?? 0} color="warning" icon={Clock} to="/ordens" search={{ status: "em_andamento" }} />
+        <StatusPill label="Finalizadas" value={op?.finalizadas ?? 0} color="success" icon={ClipboardCheck} to="/ordens" search={{ status: "finalizada" }} />
+        <StatusPill label="Canceladas" value={op?.canceladas ?? 0} color="muted" icon={ClipboardList} to="/ordens" search={{ status: "cancelada" }} />
+        <StatusPill label="Divergências" value={op?.divergencias ?? 0} color="destructive" icon={AlertTriangle} to="/ordens" search={{ divergencia: "1" }} />
       </section>
 
       {/* KPIs numéricos */}
@@ -206,6 +206,8 @@ function Dashboard() {
               name: s.name,
               detail: `${s.ordens} desossas · ${formatKg(s.peso_aproveitado, 2)} kg aprov.`,
               value: `${formatPercent(s.rendimento_pct)}%`,
+              to: "/ordens",
+              search: { supplier_id: (s as any).id },
             }))}
           />
           <RankingCard
@@ -214,6 +216,8 @@ function Dashboard() {
               name: s.name,
               detail: `${s.ordens} desossas`,
               value: `${formatKg(s.peso_recebido, 2)} kg`,
+              to: "/ordens",
+              search: { supplier_id: (s as any).id },
             }))}
           />
           <RankingCard
@@ -224,6 +228,8 @@ function Dashboard() {
                 s.tempo_medio_min ? ` · ${Math.round(s.tempo_medio_min)}min` : ""
               }`,
               value: `${formatPercent(s.rendimento_pct)}%`,
+              to: "/ordens",
+              search: { employee_id: (s as any).id },
             }))}
           />
         </div>
@@ -237,11 +243,15 @@ function StatusPill({
   value,
   color,
   icon: Icon,
+  to,
+  search,
 }: {
   label: string;
   value: number;
   color: "secondary" | "blue" | "warning" | "success" | "destructive" | "muted";
   icon: React.ComponentType<{ className?: string }>;
+  to?: string;
+  search?: Record<string, string>;
 }) {
   const cls: Record<string, string> = {
     secondary: "bg-secondary text-foreground",
@@ -251,15 +261,24 @@ function StatusPill({
     destructive: "bg-destructive/10 text-destructive",
     muted: "bg-secondary text-muted-foreground",
   };
-  return (
-    <div className={`rounded-md p-3 flex items-center gap-3 animate-fade-in ${cls[color]}`}>
+  const inner = (
+    <>
       <Icon className="size-5 shrink-0" />
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-widest opacity-80 truncate">{label}</div>
         <div className="font-mono font-bold text-xl leading-none">{value}</div>
       </div>
-    </div>
+    </>
   );
+  const className = `rounded-md p-3 flex items-center gap-3 animate-fade-in ${cls[color]} ${to ? "hover:opacity-90 cursor-pointer transition-opacity" : ""}`;
+  if (to) {
+    return (
+      <Link to={to} search={search as any} className={className} aria-label={`Ver ${label}`}>
+        {inner}
+      </Link>
+    );
+  }
+  return <div className={className}>{inner}</div>;
 }
 
 function KpiCard({
@@ -298,7 +317,7 @@ function RankingCard({
   items,
 }: {
   title: string;
-  items: { name: string; detail: string; value: string }[];
+  items: { name: string; detail: string; value: string; to?: string; search?: Record<string, string | undefined> }[];
 }) {
   return (
     <div className="bg-panel border rounded-lg p-5">
@@ -307,18 +326,35 @@ function RankingCard({
         <div className="text-sm text-muted-foreground">Sem dados no período.</div>
       ) : (
         <ol className="space-y-3">
-          {items.map((it, i) => (
-            <li key={`${it.name}-${i}`} className="flex items-center gap-3">
-              <span className="size-6 rounded bg-secondary text-[11px] font-bold flex items-center justify-center">
-                {i + 1}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate">{it.name}</div>
-                <div className="text-[11px] text-muted-foreground truncate">{it.detail}</div>
-              </div>
-              <span className="font-mono text-sm font-bold">{it.value}</span>
-            </li>
-          ))}
+          {items.map((it, i) => {
+            const row = (
+              <>
+                <span className="size-6 rounded bg-secondary text-[11px] font-bold flex items-center justify-center">
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold truncate">{it.name}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">{it.detail}</div>
+                </div>
+                <span className="font-mono text-sm font-bold">{it.value}</span>
+              </>
+            );
+            return (
+              <li key={`${it.name}-${i}`}>
+                {it.to && it.search ? (
+                  <Link
+                    to={it.to}
+                    search={it.search as any}
+                    className="flex items-center gap-3 -mx-2 px-2 py-1 rounded-md hover:bg-secondary/60 transition-colors"
+                  >
+                    {row}
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-3">{row}</div>
+                )}
+              </li>
+            );
+          })}
         </ol>
       )}
     </div>

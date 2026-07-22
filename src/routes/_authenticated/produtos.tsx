@@ -25,7 +25,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/produtos")({
-  head: () => ({ meta: [{ title: "Produtos — CarnePro" }] }),
+  head: () => ({ meta: [{ title: "Produtos — PRO MEAT" }] }),
   beforeLoad: ({ context }) => assertAnyRole((context as any).roles ?? [], ["admin"]),
   component: Produtos,
 });

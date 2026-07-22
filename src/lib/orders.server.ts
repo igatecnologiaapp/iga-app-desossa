@@ -21,6 +21,8 @@ export type HistoryAction =
   | "ordem_finalizada"
   | "ordem_finalizada_divergencia"
   | "ordem_cancelada"
+  | "ordem_reaberta"
+  | "ordem_excluida"
   | "status_alterado";
 
 export async function fetchRoles(supabase: any, userId: string): Promise<string[]> {

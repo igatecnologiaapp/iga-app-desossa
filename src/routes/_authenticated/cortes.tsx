@@ -28,7 +28,7 @@ import { Switch } from "@/components/ui/switch";
 export const Route = createFileRoute("/_authenticated/cortes")({
   head: () => ({
     meta: [
-      { title: "Cortes — CarnePro" },
+      { title: "Cortes — PRO MEAT" },
       { name: "description", content: "Cadastro estruturado de cortes." },
     ],
   }),

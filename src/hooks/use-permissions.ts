@@ -22,6 +22,8 @@ export function usePermissions() {
     canCreateOrders: isAdmin || isSupervisor,
     canEditOrders: isAdmin || isSupervisor,
     canCancelOrders: isAdmin || isSupervisor,
+    canReopenOrders: isAdmin || isSupervisor,
+    canDeleteOrders: isAdmin,
     canExecuteDesossa: isAdmin || isAcougueiro,
     canViewDashboard: isAdmin || isSupervisor || isVisualizacao,
     canViewReports: isAdmin || isSupervisor || isVisualizacao,

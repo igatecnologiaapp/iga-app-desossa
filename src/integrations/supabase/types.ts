@@ -184,6 +184,9 @@ export type Database = {
           cancellation_reason: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           divergencia_kg: number | null
           divergencia_pct: number | null
           finalizada_com_divergencia: boolean
@@ -200,6 +203,10 @@ export type Database = {
           peso_inicial: number
           product_id: string | null
           rendimento_pct: number | null
+          reopen_count: number
+          reopen_reason: string | null
+          reopened_at: string | null
+          reopened_by: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           stock_entry_id: string | null
@@ -212,6 +219,9 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           divergencia_kg?: number | null
           divergencia_pct?: number | null
           finalizada_com_divergencia?: boolean
@@ -228,6 +238,10 @@ export type Database = {
           peso_inicial: number
           product_id?: string | null
           rendimento_pct?: number | null
+          reopen_count?: number
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stock_entry_id?: string | null
@@ -240,6 +254,9 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           divergencia_kg?: number | null
           divergencia_pct?: number | null
           finalizada_com_divergencia?: boolean
@@ -256,6 +273,10 @@ export type Database = {
           peso_inicial?: number
           product_id?: string | null
           rendimento_pct?: number | null
+          reopen_count?: number
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stock_entry_id?: string | null

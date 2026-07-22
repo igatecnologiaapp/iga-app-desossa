@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { assertAnyRole } from "@/lib/route-guards";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
@@ -22,14 +23,26 @@ import {
   DEFAULT_TOLERANCE,
 } from "@/lib/deboning-calcs";
 import { useTenantSettings } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
+import { reopenOrder as reopenOrderFn, deleteOrder as deleteOrderFn } from "@/lib/orders.functions";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, DollarSign, Clock, Calculator } from "lucide-react";
+import { ArrowLeft, DollarSign, Clock, Calculator, RotateCcw, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/ordens/$id")({
   head: () => ({
     meta: [
-      { title: "Detalhe da Ordem — CarnePro" },
+      { title: "Detalhe da Ordem — PRO MEAT" },
       { name: "description", content: "Detalhe, conciliação e precificação da ordem de desossa." },
     ],
   }),
@@ -39,8 +52,40 @@ export const Route = createFileRoute("/_authenticated/ordens/$id")({
 
 function OrdemDetalhe() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const perms = usePermissions();
   const { data: settings } = useTenantSettings();
   const [margem, setMargem] = useState<string>("");
+  const [reopenOpen, setReopenOpen] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
+
+  const reopenSrv = useServerFn(reopenOrderFn);
+  const deleteSrv = useServerFn(deleteOrderFn);
+
+  const reopenMut = useMutation({
+    mutationFn: () => reopenSrv({ data: { order_id: id, reason: reopenReason.trim() } }),
+    onSuccess: () => {
+      toast.success("Ordem reaberta");
+      setReopenOpen(false);
+      setReopenReason("");
+      qc.invalidateQueries({ queryKey: ["order-detail", id] });
+      qc.invalidateQueries({ queryKey: ["orders-list"] });
+      qc.invalidateQueries({ queryKey: ["order-history", id] });
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: () => deleteSrv({ data: { order_id: id, reason: deleteReason.trim() } }),
+    onSuccess: () => {
+      toast.success("Ordem excluída");
+      navigate({ to: "/ordens" });
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order-detail", id],
@@ -111,12 +156,24 @@ function OrdemDetalhe() {
       title={order.order_code ?? "Ordem"}
       subtitle={(order as any).pecas_entrada?.name ?? (order as any).products?.name ?? ""}
       actions={
-        <Link
-          to="/ordens"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Voltar
-        </Link>
+        <div className="flex items-center gap-2">
+          {perms.canReopenOrders && order.status === "finalizada" ? (
+            <Button size="sm" variant="outline" onClick={() => setReopenOpen(true)}>
+              <RotateCcw className="size-4 mr-1" /> Reabrir
+            </Button>
+          ) : null}
+          {perms.canDeleteOrders ? (
+            <Button size="sm" variant="outline" onClick={() => setDeleteOpen(true)} className="text-destructive hover:text-destructive">
+              <Trash2 className="size-4 mr-1" /> Excluir
+            </Button>
+          ) : null}
+          <Link
+            to="/ordens"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" /> Voltar
+          </Link>
+        </div>
       }
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -288,6 +345,65 @@ function OrdemDetalhe() {
           </div>
         </div>
       </div>
+
+      <Dialog open={reopenOpen} onOpenChange={setReopenOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reabrir ordem</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivo da reabertura *</Label>
+            <Textarea
+              value={reopenReason}
+              onChange={(e) => setReopenReason(e.target.value)}
+              rows={3}
+              placeholder="Descreva por que esta ordem precisa ser reaberta"
+            />
+            <p className="text-xs text-muted-foreground">
+              A ordem retornará para <b>em andamento</b> mantendo o mesmo açougueiro. O histórico é preservado.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReopenOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => reopenMut.mutate()}
+              disabled={reopenReason.trim().length < 3 || reopenMut.isPending}
+            >
+              Reabrir ordem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir ordem</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivo da exclusão *</Label>
+            <Textarea
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              rows={3}
+              placeholder="Descreva por que esta ordem deve ser excluída"
+            />
+            <p className="text-xs text-destructive">
+              A exclusão é lógica: a ordem deixa de aparecer nas listas, mas o histórico permanece para auditoria.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteMut.mutate()}
+              disabled={deleteReason.trim().length < 3 || deleteMut.isPending}
+            >
+              Excluir ordem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/_authenticated/rendimento")({
   head: () => ({
     meta: [
-      { title: "Rendimento Esperado — CarnePro" },
+      { title: "Rendimento Esperado — PRO MEAT" },
       { name: "description", content: "Tabela de cortes por peça de entrada e rendimento esperado." },
     ],
   }),

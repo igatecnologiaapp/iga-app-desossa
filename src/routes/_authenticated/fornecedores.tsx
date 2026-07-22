@@ -20,7 +20,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/fornecedores")({
-  head: () => ({ meta: [{ title: "Fornecedores — CarnePro" }] }),
+  head: () => ({ meta: [{ title: "Fornecedores — PRO MEAT" }] }),
   beforeLoad: ({ context }) => assertAnyRole((context as any).roles ?? [], ["admin"]),
   component: Fornecedores,
 });

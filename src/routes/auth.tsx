@@ -12,8 +12,8 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Entrar — CarnePro" },
-      { name: "description", content: "Acesso ao CarnePro — sistema de gestão de desossa." },
+      { title: "Entrar — PRO MEAT" },
+      { name: "description", content: "Acesso ao PRO MEAT — sistema de gestão de desossa." },
     ],
   }),
   component: AuthPage,
@@ -82,10 +82,10 @@ function AuthPage() {
         <div className="relative">
           <div className="flex items-center gap-3">
             <div className="size-11 bg-white/15 backdrop-blur rounded-md flex items-center justify-center font-bold text-xl border border-white/20">
-              C
+              P
             </div>
             <div>
-              <div className="font-bold tracking-tight text-2xl leading-none">CARNEPRO</div>
+              <div className="font-bold tracking-tight text-2xl leading-none">PRO MEAT</div>
               <div className="text-[10px] uppercase tracking-widest opacity-80 mt-1">
                 Sistema de Gestão de Desossa
               </div>
@@ -113,11 +113,11 @@ function AuthPage() {
           <div className="lg:hidden text-center mb-8">
             <div className="inline-flex items-center gap-3">
               <div className="size-11 bg-primary rounded-md flex items-center justify-center text-primary-foreground font-bold text-xl">
-                C
+                P
               </div>
               <div className="text-left">
                 <div className="font-bold tracking-tight text-xl leading-none">
-                  CARNE<span className="text-primary">PRO</span>
+                  PRO<span className="text-primary"> MEAT</span>
                 </div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                   Gestão de Desossa

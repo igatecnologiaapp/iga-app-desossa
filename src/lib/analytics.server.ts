@@ -69,6 +69,7 @@ export async function fetchFinalizedOrders(
     .select(ORDER_SELECT)
     .eq("tenant_id", TENANT_ID)
     .eq("status", "finalizada")
+    .is("deleted_at", null)
     .order("order_date", { ascending: false })
     .limit(1000);
   if (period.from) q = q.gte("order_date", period.from);
@@ -83,6 +84,7 @@ export async function fetchStatusCounts(supabase: any, period: Period) {
     .from("deboning_orders")
     .select("id, status, order_date, finalizada_com_divergencia")
     .eq("tenant_id", TENANT_ID)
+    .is("deleted_at", null)
     .limit(5000);
   if (period.from) q = q.gte("order_date", period.from);
   if (period.to) q = q.lte("order_date", period.to);

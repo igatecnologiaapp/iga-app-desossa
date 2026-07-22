@@ -1,5 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { useState, type ComponentType } from "react";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState, type ComponentType } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -20,7 +20,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import {
   Sidebar,
   SidebarContent,
@@ -53,8 +52,18 @@ interface NavItem {
 interface NavGroup {
   label: string;
   key: string;
-  collapsible?: boolean;
   items: NavItem[];
+}
+
+const STORAGE_KEY = "pro-meat.sidebar.groups.v1";
+
+function readOpenState(): Record<string, boolean> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
 }
 
 export function AppSidebar() {
@@ -87,7 +96,6 @@ export function AppSidebar() {
     {
       key: "cadastros",
       label: "Cadastros",
-      collapsible: true,
       items: [
         { to: "/fornecedores", label: "Fornecedores", icon: Truck, show: perms.isAdmin },
         { to: "/funcionarios", label: "Funcionários", icon: UserCog, show: perms.isAdmin },
@@ -136,11 +144,11 @@ export function AppSidebar() {
       <SidebarHeader className="border-b">
         <div className="flex items-center gap-3 px-2 py-2">
           <div className="size-9 bg-primary rounded flex items-center justify-center text-primary-foreground font-bold shadow-sm shrink-0">
-            C
+            P
           </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <div className="font-bold tracking-tight text-base leading-none">
-              CARNE<span className="text-primary">PRO</span>
+              PRO<span className="text-primary"> MEAT</span>
             </div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
               Gestão de Desossa
@@ -150,42 +158,14 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {filtered.map((group) =>
-          group.collapsible ? (
-            <CollapsibleGroup
-              key={group.key}
-              group={group}
-              isActive={isActive}
-              collapsed={collapsed}
-            />
-          ) : (
-            <SidebarGroup key={group.key}>
-              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    const active = isActive(item.to);
-                    return (
-                      <SidebarMenuItem key={item.to}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={active}
-                          tooltip={item.label}
-                        >
-                          <Link to={item.to}>
-                            <Icon />
-                            <span>{item.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ),
-        )}
+        {filtered.map((group) => (
+          <CollapsibleGroup
+            key={group.key}
+            group={group}
+            isActive={isActive}
+            collapsed={collapsed}
+          />
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t">
@@ -234,9 +214,25 @@ function CollapsibleGroup({
   collapsed: boolean;
 }) {
   const hasActiveChild = group.items.some((i) => isActive(i.to));
-  const [open, setOpen] = useState(hasActiveChild);
+  const [open, setOpen] = useState<boolean>(() => {
+    const saved = readOpenState();
+    if (group.key in saved) return !!saved[group.key];
+    return hasActiveChild || true; // default expanded
+  });
 
-  // Quando a sidebar está recolhida em modo ícone: exibe itens como ícones planos com tooltip.
+  // Persist per-group state
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = readOpenState();
+    saved[group.key] = open;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    } catch {
+      /* ignore */
+    }
+  }, [open, group.key]);
+
+  // Sidebar em modo ícone: sempre mostra ícones planos com tooltip.
   if (collapsed) {
     return (
       <SidebarGroup>

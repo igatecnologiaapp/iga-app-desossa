@@ -1,12 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { assertAnyRole } from "@/lib/route-guards";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { formatKg, formatPercent } from "@/lib/format";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getExecutiveKPIs,
   getYieldAnalysis,
@@ -25,7 +33,7 @@ import {
 } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
-  head: () => ({ meta: [{ title: "Relatórios — CarnePro" }] }),
+  head: () => ({ meta: [{ title: "Relatórios — PRO MEAT" }] }),
   beforeLoad: ({ context }) => assertAnyRole((context as any).roles ?? [], ["admin", "supervisor", "visualizacao"]),
   component: Relatorios,
 });
@@ -34,6 +42,41 @@ function Relatorios() {
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [margem, setMargem] = useState<number>(30);
+  const [supplierId, setSupplierId] = useState<string>("");
+  const [employeeId, setEmployeeId] = useState<string>("");
+  const [pecaId, setPecaId] = useState<string>("");
+  const [status, setStatus] = useState<string>("");
+
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["rep-suppliers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("suppliers").select("id, razao_social").order("razao_social");
+      return data ?? [];
+    },
+  });
+  const { data: employees = [] } = useQuery({
+    queryKey: ["rep-employees"],
+    queryFn: async () => {
+      const { data } = await supabase.from("employees").select("id, full_name").order("full_name");
+      return data ?? [];
+    },
+  });
+  const { data: pecas = [] } = useQuery({
+    queryKey: ["rep-pecas"],
+    queryFn: async () => {
+      const { data } = await supabase.from("pecas_entrada").select("id, name").eq("active", true).order("name");
+      return data ?? [];
+    },
+  });
+
+  const drillSearch: Record<string, string> = {};
+  if (supplierId) drillSearch.supplier_id = supplierId;
+  if (employeeId) drillSearch.employee_id = employeeId;
+  if (pecaId) drillSearch.peca_entrada_id = pecaId;
+  if (status) drillSearch.status = status;
+  if (from) drillSearch.date_from = from;
+  if (to) drillSearch.date_to = to;
+  const hasDrill = Object.keys(drillSearch).length > 0;
 
   const period = { from: from || null, to: to || null };
 
@@ -66,25 +109,89 @@ function Relatorios() {
   return (
     <AppShell title="Relatórios" subtitle={`${ex?.ordens ?? 0} desossas finalizadas`}>
       {/* Filtros */}
-      <div className="bg-panel border rounded-lg p-4 flex flex-wrap items-end gap-3">
-        <div>
-          <Label className="text-xs">De</Label>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+      <div className="bg-panel border rounded-lg p-4 space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <Label className="text-xs">De</Label>
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div>
+            <Label className="text-xs">Até</Label>
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+          <div>
+            <Label className="text-xs">Margem (%)</Label>
+            <Input
+              type="number"
+              value={margem}
+              step="1"
+              onChange={(e) => setMargem(Number(e.target.value) || 0)}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Status</Label>
+            <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="atribuida">Atribuída</SelectItem>
+                <SelectItem value="em_andamento">Em andamento</SelectItem>
+                <SelectItem value="finalizada">Finalizada</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div>
-          <Label className="text-xs">Até</Label>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <Label className="text-xs">Fornecedor</Label>
+            <Select value={supplierId || "all"} onValueChange={(v) => setSupplierId(v === "all" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {suppliers.map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>{s.razao_social}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Açougueiro</Label>
+            <Select value={employeeId || "all"} onValueChange={(v) => setEmployeeId(v === "all" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {employees.map((e: any) => (
+                  <SelectItem key={e.id} value={e.id}>{e.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Peça de Entrada</Label>
+            <Select value={pecaId || "all"} onValueChange={(v) => setPecaId(v === "all" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {pecas.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div>
-          <Label className="text-xs">Margem (%)</Label>
-          <Input
-            type="number"
-            value={margem}
-            step="1"
-            onChange={(e) => setMargem(Number(e.target.value) || 0)}
-            className="w-24"
-          />
-        </div>
+        {hasDrill ? (
+          <div className="flex justify-end">
+            <Link
+              to="/ordens"
+              search={drillSearch as any}
+              className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-md border border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
+            >
+              Ver ordens com esses filtros →
+            </Link>
+          </div>
+        ) : null}
       </div>
 
       <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
