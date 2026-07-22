@@ -156,25 +156,13 @@ function Ordens() {
 
   const selectedPeca: any = pecas.find((p: any) => p.id === form.peca_entrada_id);
 
+  const createOrder = useServerFn(createOrderFn);
+  const cancelOrder = useServerFn(cancelOrderFn);
+
   const createMut = useMutation({
-    mutationFn: async () => {
-      if (!form.stock_entry_id) throw new Error("Selecione a Entrada de Mercadoria.");
-      if (!form.peca_entrada_id) throw new Error("Selecione a peça de entrada.");
-      if (!form.supplier_id) throw new Error("Fornecedor não identificado na entrada.");
-      if (form.peso_inicial <= 0) throw new Error("Informe o peso inicial.");
-      const { data: userRes } = await supabase.auth.getUser();
-
-      // Server-generated sequential code (OD-000001)
-      const { data: codeRes, error: codeErr } = await supabase.rpc("next_order_code", {
-        _tenant: "00000000-0000-0000-0000-000000000001",
-      });
-      if (codeErr) throw codeErr;
-      const code = (codeRes as unknown as string) ?? `OD-${Date.now()}`;
-
-      const status = form.assigned_employee_id ? "atribuida" : "pendente";
-      const { data: inserted, error } = await supabase
-        .from("deboning_orders")
-        .insert({
+    mutationFn: async () =>
+      createOrder({
+        data: {
           stock_entry_id: form.stock_entry_id,
           peca_entrada_id: form.peca_entrada_id,
           supplier_id: form.supplier_id,
@@ -183,48 +171,13 @@ function Ordens() {
           assigned_employee_id: form.assigned_employee_id || null,
           valor_compra: form.valor_compra ? Number(form.valor_compra) : null,
           observacoes: form.observacoes || null,
-          order_code: code,
-          status,
-          created_by: userRes.user?.id,
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-
-
-      const orderId = inserted.id;
-      await logOrderHistory({ orderId, action: "ordem_criada", toStatus: status });
-
-      const emp = employees.find((e: any) => e.id === form.assigned_employee_id);
-      if (form.assigned_employee_id) {
-        await logOrderHistory({
-          orderId,
-          action: "ordem_atribuida",
-          toStatus: "atribuida",
-          notes: emp ? `Atribuída para ${emp.full_name}` : null,
-        });
-        if (emp?.user_id) {
-          await notify({
-            userId: emp.user_id,
-            type: "ordem_atribuida",
-            title: "Nova ordem atribuída",
-            body: `${selectedPeca?.name ?? "Ordem"} · ${formatKg(form.peso_inicial, 2)} kg`,
-            orderId,
-          });
-        }
-      }
-      await notifyAdmins({
-        type: "desossa_criada",
-        title: "Nova ordem de desossa",
-        body: `${code} — ${selectedPeca?.name ?? "—"}`,
-        orderId,
-      });
-      return orderId;
-    },
+        },
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["orders-list"] });
       qc.invalidateQueries({ queryKey: ["dashboard-orders"] });
       qc.invalidateQueries({ queryKey: ["my-orders"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
       setOpen(false);
       setForm({
         stock_entry_id: "",
@@ -237,7 +190,6 @@ function Ordens() {
         valor_compra: "",
         observacoes: "",
       });
-
       toast.success("Ordem criada com sucesso");
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
@@ -246,29 +198,13 @@ function Ordens() {
   const cancelMut = useMutation({
     mutationFn: async () => {
       if (!cancelId) return;
-      const from = orders.find((o) => o.id === cancelId)?.status ?? null;
-      const { error } = await supabase
-        .from("deboning_orders")
-        .update({ status: "cancelada", cancellation_reason: cancelReason || null })
-        .eq("id", cancelId);
-      if (error) throw error;
-      await logOrderHistory({
-        orderId: cancelId,
-        action: "ordem_cancelada",
-        fromStatus: from,
-        toStatus: "cancelada",
-        notes: cancelReason || null,
-      });
-      await notifyAdmins({
-        type: "cancelamento",
-        title: "Ordem cancelada",
-        body: cancelReason ? `Motivo: ${cancelReason}` : null,
-        orderId: cancelId,
-      });
+      await cancelOrder({ data: { order_id: cancelId, reason: cancelReason || null } });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["orders-list"] });
       qc.invalidateQueries({ queryKey: ["dashboard-orders"] });
+      qc.invalidateQueries({ queryKey: ["order"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
       setCancelId(null);
       setCancelReason("");
       toast.success("Ordem cancelada");
