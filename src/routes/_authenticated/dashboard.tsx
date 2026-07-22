@@ -206,6 +206,8 @@ function Dashboard() {
               name: s.name,
               detail: `${s.ordens} desossas · ${formatKg(s.peso_aproveitado, 2)} kg aprov.`,
               value: `${formatPercent(s.rendimento_pct)}%`,
+              to: "/ordens",
+              search: { supplier_id: (s as any).id },
             }))}
           />
           <RankingCard
@@ -214,6 +216,8 @@ function Dashboard() {
               name: s.name,
               detail: `${s.ordens} desossas`,
               value: `${formatKg(s.peso_recebido, 2)} kg`,
+              to: "/ordens",
+              search: { supplier_id: (s as any).id },
             }))}
           />
           <RankingCard
@@ -224,6 +228,8 @@ function Dashboard() {
                 s.tempo_medio_min ? ` · ${Math.round(s.tempo_medio_min)}min` : ""
               }`,
               value: `${formatPercent(s.rendimento_pct)}%`,
+              to: "/ordens",
+              search: { employee_id: (s as any).id },
             }))}
           />
         </div>
