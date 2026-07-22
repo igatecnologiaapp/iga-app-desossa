@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { assertAnyRole } from "@/lib/route-guards";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
@@ -22,9 +23,21 @@ import {
   DEFAULT_TOLERANCE,
 } from "@/lib/deboning-calcs";
 import { useTenantSettings } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
+import { reopenOrder as reopenOrderFn, deleteOrder as deleteOrderFn } from "@/lib/orders.functions";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, DollarSign, Clock, Calculator } from "lucide-react";
+import { ArrowLeft, DollarSign, Clock, Calculator, RotateCcw, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/ordens/$id")({
   head: () => ({
@@ -39,8 +52,40 @@ export const Route = createFileRoute("/_authenticated/ordens/$id")({
 
 function OrdemDetalhe() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const perms = usePermissions();
   const { data: settings } = useTenantSettings();
   const [margem, setMargem] = useState<string>("");
+  const [reopenOpen, setReopenOpen] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
+
+  const reopenSrv = useServerFn(reopenOrderFn);
+  const deleteSrv = useServerFn(deleteOrderFn);
+
+  const reopenMut = useMutation({
+    mutationFn: () => reopenSrv({ data: { order_id: id, reason: reopenReason.trim() } }),
+    onSuccess: () => {
+      toast.success("Ordem reaberta");
+      setReopenOpen(false);
+      setReopenReason("");
+      qc.invalidateQueries({ queryKey: ["order-detail", id] });
+      qc.invalidateQueries({ queryKey: ["orders-list"] });
+      qc.invalidateQueries({ queryKey: ["order-history", id] });
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: () => deleteSrv({ data: { order_id: id, reason: deleteReason.trim() } }),
+    onSuccess: () => {
+      toast.success("Ordem excluída");
+      navigate({ to: "/ordens" });
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order-detail", id],
