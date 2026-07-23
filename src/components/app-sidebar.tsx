@@ -89,8 +89,8 @@ export function AppSidebar() {
       label: "Operação",
       items: [
         { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: canOps },
-        { to: "/ordens", label: "Ordens de Desossa", icon: ClipboardList, show: canOps },
         { to: "/entradas", label: "Entrada de Matéria-Prima", icon: Package, show: perms.isAdmin || perms.isSupervisor },
+        { to: "/ordens", label: "Ordens de Desossa", icon: ClipboardList, show: canOps },
       ],
     },
     {
