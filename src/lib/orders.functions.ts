@@ -43,7 +43,8 @@ export const createOrder = createServerFn({ method: "POST" })
     const roles = await fetchRoles(supabase, userId);
     ensureRole(roles, ["admin", "supervisor"]);
 
-    const { data: codeRes, error: codeErr } = await supabase.rpc("next_order_code", {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: codeRes, error: codeErr } = await supabaseAdmin.rpc("next_order_code", {
       _tenant: TENANT_ID,
     });
     if (codeErr) throw new Error(codeErr.message);
